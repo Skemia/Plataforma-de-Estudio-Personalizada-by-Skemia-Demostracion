@@ -76,6 +76,7 @@
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
             </div>
+
             <div id="navigation-links" class="hidden absolute top-full left-0 w-full bg-neutral-card border-b md:border-none md:static md:w-auto md:flex md:items-center md:bg-transparent">
                 <div class="flex flex-col md:flex-row items-start md:items-center p-4 md:p-0 space-y-3 md:space-y-0 md:space-x-6 text-text-secondary w-full">
                     <a href="#" class="hover:text-text-primary w-full" data-page="flashcards">Flashcards</a>
@@ -84,9 +85,10 @@
                     <a href="#" class="hover:text-text-primary w-full" data-page="audios">Audios</a>
                     <a href="#" class="hover:text-text-primary w-full" data-page="report">Informes</a>
                     <a href="#" class="hover:text-text-primary w-full" data-page="fuentes">Fuentes</a>
+                    <a href="#" class="hover:text-text-primary w-full font-bold" data-page="progreso">Mi Progreso</a>
                 </div>
             </div>
-            </nav>
+        </nav>
     </header>
 
     <main class="flex-grow container mx-auto px-6 py-8">
@@ -247,6 +249,27 @@
                        </div>
              </div>
         </section>
+
+        <section id="page-progreso" class="page-content">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-center">Panel de Progreso</h1>
+                
+                <div id="progress-container" class="space-y-12">
+                    </div>
+
+                <div id="session-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 id="modal-title" class="text-xl font-bold">Detalles de la Sesión</h3>
+                            <button id="modal-close-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
+                        </div>
+                        <div id="modal-content" class="text-left">
+                            </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
     </main>
     
     <footer class="text-center py-4 text-text-secondary text-sm border-t border-neutral-border mt-8">
@@ -254,7 +277,7 @@
     </footer>
 
     <script>
-    // Aseguramos que la librería jspdf esté disponible globalmente (ya cargada en el <head>)
+    // Aseguramos que la librería jspdf esté disponible globalmente
     const { jsPDF } = window.jspdf;
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -262,7 +285,6 @@
         let MOCK_DATA;
 
         // --- CARGA DE DATOS ---
-        // Se cargan los datos desde el archivo externo datos.json
         try {
             const response = await fetch('datos.json');
             if (!response.ok) {
@@ -276,12 +298,10 @@
                     <h1 class="text-2xl font-bold text-red-700">Error al Cargar Contenido</h1>
                     <p class="text-gray-600 mt-2">No se pudo obtener la información necesaria para la aplicación. Por favor, revisa la consola de desarrollador (F12) o intenta recargar la página.</p>
                 </div>`;
-            return; // Detiene la ejecución del script si los datos no cargan
+            return;
         }
         
         // --- ESTADO Y LÓGICA DE LA APLICACIÓN ---
-        // (El resto del código permanece idéntico)
-
         let AppState = {
             currentTemarioIndex: 0,
             flashcards: {
@@ -303,10 +323,35 @@
                 score: 0,
                 userAnswers: [],
                 isReviewMode: false,
-                // Almacena el estado de "finalización temprana" para el renderizado de resultados
                 isEarlyFinish: false, 
             }
         };
+
+        // --- MÓDULO DE PROGRESO ---
+        function getProgressData() {
+            const data = localStorage.getItem('skemiaProgress');
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveProgressData(progressData) {
+            localStorage.setItem('skemiaProgress', JSON.stringify(progressData));
+        }
+
+        function addProgressRecord(temarioIndices, record) {
+            const progress = getProgressData();
+            const sessionId = `${record.type.slice(0, 2)}-${new Date().getTime()}`;
+            record.sessionId = sessionId;
+
+            temarioIndices.forEach(index => {
+                const temarioId = `temario-${index}`;
+                if (!progress[temarioId]) {
+                    progress[temarioId] = [];
+                }
+                progress[temarioId].push(record);
+            });
+
+            saveProgressData(progress);
+        }
 
         const pages = document.querySelectorAll('.page-content');
         const navLinks = document.querySelectorAll('nav a');
@@ -324,6 +369,7 @@
                 if (pageLogic === 'audios') renderDownloadPage('audios');
                 if (pageLogic === 'report') renderDownloadPage('report');
                 if (pageLogic === 'fuentes') renderDownloadPage('fuentes');
+                if (pageLogic === 'progreso') renderProgressPage();
             }
         }
 
@@ -369,43 +415,59 @@
         const fcPrevBtn = document.getElementById('flashcard-prev');
         const fcNextBtn = document.getElementById('flashcard-next');
         const fcCounter = document.getElementById('flashcard-counter');
-        const fcShuffleBtn = document.getElementById('flashcard-shuffle'); // Botón de pre-shuffle
-        const fcShuffleStudyBtn = document.getElementById('flashcard-shuffle-study'); // Botón de re-shuffle en estudio
-        const fcDownloadBtn = document.getElementById('flashcard-download'); // Botón de descarga
+        const fcShuffleBtn = document.getElementById('flashcard-shuffle');
+        const fcShuffleStudyBtn = document.getElementById('flashcard-shuffle-study');
+        const fcDownloadBtn = document.getElementById('flashcard-download');
         const fcDifficultyControls = document.getElementById('flashcard-difficulty-controls');
         const changeTopicsBtn = document.getElementById('change-topics-btn');
 
         function setupFlashcardsPage() {
             setupMultiSelect('flashcards');
             fcSelectionArea.classList.remove('hidden');
-            fcStudyArea.classList.add('hidden', 'flex'); // Asegura que se oculta correctamente
+            fcStudyArea.classList.add('hidden', 'flex');
         }
 
         startFlashcardsBtn.addEventListener('click', () => {
             fcSelectionArea.classList.add('hidden');
             fcStudyArea.classList.remove('hidden');
             fcStudyArea.classList.add('flex');
-            
             resetFlashcardState();
-            
             let combined = [];
             AppState.flashcards.selectedTemarioIndices.forEach(index => {
                 combined.push(...MOCK_DATA.temarios[index].flashcards);
             });
-            
-            // Aplica el shuffle si el botón de pre-shuffle está activo
             if (fcShuffleBtn.classList.contains('active')) {
                 for (let i = combined.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [combined[i], combined[j]] = [combined[j], combined[i]];
                 }
             }
-            
             AppState.flashcards.combinedFlashcards = combined;
             renderFlashcard();
         });
 
-        changeTopicsBtn.addEventListener('click', () => setupFlashcardsPage());
+        changeTopicsBtn.addEventListener('click', () => {
+            const state = AppState.flashcards;
+            const studiedCards = Object.keys(state.difficulty);
+            if (studiedCards.length > 0) {
+                const counts = { easy: 0, medium: 0, hard: 0 };
+                studiedCards.forEach(cardId => {
+                    const difficulty = state.difficulty[cardId];
+                    if (counts[difficulty] !== undefined) {
+                        counts[difficulty]++;
+                    }
+                });
+                const record = {
+                    type: 'flashcards',
+                    date: new Date().toISOString(),
+                    totalInDeck: state.combinedFlashcards.length,
+                    studiedCount: studiedCards.length,
+                    ...counts
+                };
+                addProgressRecord(state.selectedTemarioIndices, record);
+            }
+            setupFlashcardsPage();
+        });
 
         function resetFlashcardState() {
              AppState.flashcards = {
@@ -413,7 +475,6 @@
                  combinedFlashcards: [],
                  currentIndex: 0,
                  isFlipped: false,
-                 // La preferencia de shuffle se mantiene con el botón visual
                  originalOrder: [],
                  shuffledOrder: [],
                  difficulty: {}
@@ -423,39 +484,24 @@
         function shuffleAndRestartFlashcards() {
             const state = AppState.flashcards;
             const combined = state.combinedFlashcards;
-
             if (combined.length === 0) return;
-
-            // Fisher-Yates shuffle
             for (let i = combined.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [combined[i], combined[j]] = [combined[j], combined[i]];
             }
-            
-            // Reinicia el estudio al primer índice y sin voltear
             state.currentIndex = 0;
             state.isFlipped = false;
-            
-            // Aplica feedback visual rápido al botón de estudio
             if(fcShuffleStudyBtn) {
                 fcShuffleStudyBtn.classList.add('active');
                 setTimeout(() => fcShuffleStudyBtn.classList.remove('active'), 300);
             }
-
             renderFlashcard();
         }
 
-        // Listener para el botón de re-barajar en el modo estudio
         if (fcShuffleStudyBtn) {
              fcShuffleStudyBtn.addEventListener('click', shuffleAndRestartFlashcards);
         }
 
-        /**
-         * Añade encabezado de marca a los documentos PDF.
-         * @param {jsPDF} doc Instancia de jspdf
-         * @param {string} title Título principal del documento
-         * @returns {number} Posición Y inicial después del encabezado.
-         */
         function addSkemiaHeader(doc, title) {
             const margin = 10;
             const lineHeight = 6;
@@ -464,126 +510,84 @@
             const pageWidth = doc.internal.pageSize.getWidth();
             const logoWidth = doc.getStringUnitWidth(logoText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
             const titleFontSize = 14;
-
-            // Logo (Texto simulado con color de marca)
             doc.setFontSize(20);
             doc.setFont("helvetica", "bold");
-            doc.setTextColor("#5F476B"); // brand-accent color
+            doc.setTextColor("#5F476B");
             doc.text(logoText, margin, y);
-            
-            // Título del documento
             doc.setFontSize(titleFontSize);
-            doc.setTextColor(0); // Negro
+            doc.setTextColor(0);
             doc.setFont("helvetica", "bold");
-            
             const fullTitle = title;
-            const titleWidth = doc.getStringUnitWidth(fullTitle) * titleFontSize / doc.internal.scaleFactor;
-            const maxTitleWidth = pageWidth - margin * 2; // Ancho máximo disponible en la página
-
-            // Calculamos el espacio a la derecha del logo + un pequeño margen (e.g., 5mm)
             const logoEnd = margin + logoWidth;
             const titleStartX = logoEnd + 5; 
             const availableWidthForTitle = pageWidth - titleStartX - margin;
-            
-            // Si el título es muy largo, lo separamos y lo alineamos a la izquierda, después del logo.
             if (doc.getStringUnitWidth(fullTitle) * titleFontSize / doc.internal.scaleFactor > availableWidthForTitle) {
                 const splitTitle = doc.splitTextToSize(fullTitle, availableWidthForTitle);
                 doc.text(splitTitle, titleStartX, y, { align: 'left' });
-                y += splitTitle.length * lineHeight; // Ajustar Y si el título ocupa varias líneas
+                y += splitTitle.length * lineHeight;
             } else {
-                // Si el título es corto, lo centramos en el espacio restante (de logoEnd a margin derecho)
-                // Posición central del espacio disponible: titleStartX + (availableWidthForTitle / 2)
                 const centerPoint = titleStartX + (availableWidthForTitle / 2);
                 doc.text(fullTitle, centerPoint, y, { align: 'center' });
                 y += lineHeight;
             }
-
-
-            // Nota legal de Skemia
             doc.setFontSize(8);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(150); // Gris
+            doc.setTextColor(150);
             doc.text("Este material es propiedad exclusiva de Skemia. La difusión, reproducción o distribución sin autorización expresa está prohibida.", margin, y);
             y += lineHeight;
-
-            // Línea divisoria
             doc.line(margin, y, 200, y);
-            y += lineHeight + 5; // Espacio después del encabezado
+            y += lineHeight + 5;
             return y;
         }
 
-        // Función para generar PDF de Flashcards
         function downloadFlashcardsAsPDF() {
             if (AppState.flashcards.combinedFlashcards.length === 0) {
                 alert("No hay tarjetas para descargar. Selecciona un temario e inicia el estudio.");
                 return;
             }
-
             const doc = new jsPDF();
             const cards = AppState.flashcards.combinedFlashcards;
-            
             const margin = 10;
             const lineHeight = 7;
             const maxWidth = 180;
             const titleFontSize = 14;
             const textFontSize = 10;
-
             const selectedTopicNames = AppState.flashcards.selectedTemarioIndices
                 .map(index => MOCK_DATA.temarios[index].name)
                 .join(', ');
-            
-            // 1. Añadir encabezado de marca
             let y = addSkemiaHeader(doc, `Mazo de Flashcards: ${selectedTopicNames}`);
-
-
             doc.setFont("helvetica", "normal");
-
             cards.forEach((card, index) => {
-                // Comprobación de página completa
                 if (y > 280) {
                     doc.addPage();
-                    y = addSkemiaHeader(doc, `Mazo de Flashcards: ${selectedTopicNames}`); // Re-imprimir cabecera
+                    y = addSkemiaHeader(doc, `Mazo de Flashcards: ${selectedTopicNames}`);
                 }
-
-                // Número de tarjeta
                 doc.setFontSize(titleFontSize);
                 doc.setFont("helvetica", "bold");
                 doc.text(`Tarjeta ${index + 1}:`, margin, y);
                 y += lineHeight;
-
-                // Pregunta
                 doc.setFontSize(textFontSize);
                 doc.setFont("helvetica", "bold");
                 doc.text("P: ", margin + 5, y); 
-                
                 doc.setFont("helvetica", "normal");
                 const frontLines = doc.splitTextToSize(card.front, maxWidth - 10);
                 doc.text(frontLines, margin + 10, y);
                 y += (frontLines.length * lineHeight) + 2;
-
-                // Respuesta
                 doc.setFontSize(textFontSize);
                 doc.setFont("helvetica", "bold");
                 doc.text("R: ", margin + 5, y); 
-
                 doc.setFont("helvetica", "normal");
                 const backLines = doc.splitTextToSize(card.back, maxWidth - 10);
                 doc.text(backLines, margin + 10, y);
                 y += (backLines.length * lineHeight) + lineHeight / 2;
-                
-                // Separador de tarjetas
                 doc.line(margin, y, 200, y);
                 y += lineHeight;
             });
-
-            // Generar nombre de archivo
             const firstTopicName = MOCK_DATA.temarios[AppState.flashcards.selectedTemarioIndices[0]]?.name || 'Mazo';
             const fileName = `Skemia_Flashcards_${firstTopicName.replace(/[^\w\s]/gi, '').slice(0, 30).trim().replace(/\s/g, '_')}.pdf`;
-            
             doc.save(fileName);
         }
 
-        // Listener para el botón de descarga
         if (fcDownloadBtn) {
             fcDownloadBtn.addEventListener('click', downloadFlashcardsAsPDF);
         }
@@ -591,34 +595,29 @@
         function renderFlashcard() {
             const state = AppState.flashcards;
             const currentData = state.combinedFlashcards;
-            
             if (currentData.length === 0) {
                  fcContainer.innerHTML = `<div class="w-full h-80 flex items-center justify-center"><p class="text-text-secondary">No hay flashcards en los temarios seleccionados.</p></div>`;
                  fcCounter.textContent = '0 / 0';
                  fcDifficultyControls.style.display = 'none';
                  fcPrevBtn.disabled = true;
                  fcNextBtn.disabled = true;
-                 fcDownloadBtn.disabled = true; // Deshabilitar si no hay tarjetas
+                 fcDownloadBtn.disabled = true;
                  return;
             } else {
                  fcDifficultyControls.style.display = 'block';
                  fcPrevBtn.disabled = false;
                  fcNextBtn.disabled = false;
-                 fcDownloadBtn.disabled = false; // Habilitar si hay tarjetas
+                 fcDownloadBtn.disabled = false;
             }
-
             if (state.originalOrder.length === 0) {
                  state.originalOrder = currentData.map((_, index) => index);
             }
-            // Simplificado: Como la mezcla se hace directamente en combinedFlashcards, no necesitamos order[]
             const card = currentData[state.currentIndex];
-            
             const difficulty = state.difficulty[card.id];
             let borderColor = 'border-neutral-border';
             if (difficulty === 'easy') borderColor = 'border-green-400';
             else if (difficulty === 'medium') borderColor = 'border-yellow-400';
             else if (difficulty === 'hard') borderColor = 'border-red-400';
-
             fcContainer.innerHTML = `
                 <div id="card-flipper" class="w-full h-80 rounded-xl shadow-xl cursor-pointer perspective-1000">
                     <div class="relative w-full h-full transition-transform duration-700 transform-style-3d ${state.isFlipped ? 'rotate-y-180' : ''}">
@@ -658,7 +657,6 @@
             renderFlashcard();
         });
         
-        // El botón de shuffle del área de selección solo alterna su estado 'activo'
         fcShuffleBtn.addEventListener('click', () => {
             fcShuffleBtn.classList.toggle('active');
         });
@@ -667,10 +665,8 @@
             if (e.target.matches('button')) {
                 const difficulty = e.target.dataset.difficulty;
                 const state = AppState.flashcards;
-                // La tarjeta actual se obtiene del índice, ya que combinedFlashcards está reordenado
                 const card = state.combinedFlashcards[state.currentIndex];
                 if (!card) return;
-                
                 state.difficulty[card.id] = difficulty;
                 renderFlashcard();
                 setTimeout(() => fcNextBtn.click(), 200);
@@ -701,23 +697,19 @@
             quizSelectionArea.classList.add('hidden');
             quizStudyArea.classList.remove('hidden');
             quizStudyArea.classList.add('flex');
-            
             resetQuizState();
-            
             let combined = [];
             AppState.quizzes.selectedTemarioIndices.forEach(index => {
                 if(MOCK_DATA.temarios[index].quizzes){
                     combined.push(...MOCK_DATA.temarios[index].quizzes);
                 }
             });
-            
             if (quizShuffleSelectionBtn.classList.contains('active')) {
                 for (let i = combined.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [combined[i], combined[j]] = [combined[j], combined[i]];
                 }
             }
-
             AppState.quizzes.combinedQuizzes = combined;
             renderQuiz();
         });
@@ -725,32 +717,24 @@
         quizShuffleStudyBtn.addEventListener('click', () => {
             const state = AppState.quizzes;
             if (state.combinedQuizzes.length === 0) return;
-
-            // Shuffle the quizzes
             for (let i = state.combinedQuizzes.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [state.combinedQuizzes[i], state.combinedQuizzes[j]] = [state.combinedQuizzes[j], state.combinedQuizzes[i]];
             }
-            
-            // Reset quiz state, keeping the shuffled array
             const shuffledQuizzes = state.combinedQuizzes;
             resetQuizState();
-            AppState.quizzes.combinedQuizzes = shuffledQuizzes; // Restore shuffled array
-            
-            // Aplica feedback visual rápido al botón
+            AppState.quizzes.combinedQuizzes = shuffledQuizzes;
             quizShuffleStudyBtn.classList.add('active');
             setTimeout(() => quizShuffleStudyBtn.classList.remove('active'), 300);
-
             renderQuiz();
         });
-
 
         changeQuizTopicsBtn.addEventListener('click', () => setupQuizzesPage());
 
         function resetQuizState() {
              AppState.quizzes = {
                  ...AppState.quizzes,
-                 combinedQuizzes: AppState.quizzes.combinedQuizzes, // Preserve quizzes array but reset progress
+                 combinedQuizzes: AppState.quizzes.combinedQuizzes,
                  currentIndex: 0,
                  selectedAnswer: null,
                  isAnswered: false,
@@ -764,33 +748,26 @@
         function renderQuiz() {
             const state = AppState.quizzes;
             const data = state.combinedQuizzes;
-            
             if (data.length === 0) {
                  quizContainer.innerHTML = `<p class="text-text-secondary text-center">No hay quizzes en los temarios seleccionados.</p>`;
                  return;
             }
-
             if (state.isReviewMode) {
                  renderQuizReview();
                  return;
             }
-
             if (state.currentIndex >= data.length) {
                  renderQuizResults(data);
                  return;
             }
-
             const question = data[state.currentIndex];
-            
             let feedbackBoxHtml = '';
             if (state.isAnswered) {
                  const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
                  let correctAnsHtml = '';
-                 
                  if (userAnswer && !userAnswer.isCorrect && question.type === 'fill-in-the-blank') {
                       correctAnsHtml = `<p class="text-sm text-green-700">Respuesta correcta: <strong class="font-bold">${question.answer}</strong></p>`;
                  }
-
                  if (question.explanation || correctAnsHtml) {
                       feedbackBoxHtml = `
                           <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
@@ -800,8 +777,6 @@
                       `;
                  }
             }
-
-
             quizContainer.innerHTML = `
                  <div class="progress-bar-container mb-4">
                       <div class="progress-bar" style="width: ${((state.currentIndex) / data.length) * 100}%"></div>
@@ -831,7 +806,6 @@
                  let inputClass = 'w-full p-3 border border-neutral-border rounded-md';
                  let iconHtml = '';
                  let value = state.selectedAnswer || '';
-                 
                  if (state.isAnswered) {
                       const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
                       if (userAnswer) {
@@ -845,7 +819,6 @@
                           }
                       }
                  }
-
                  return `
                      <div class="relative">
                          <input type="text" id="fill-in-blank-input" class="${inputClass}" placeholder="Escribe tu respuesta aquí..." value="${value}" ${state.isAnswered ? 'disabled' : ''}>
@@ -853,7 +826,6 @@
                      </div>
                  `;
             }
-
             const getChoiceClass = (choice) => {
                  let base = 'w-full text-left p-4 border rounded-md transition-colors flex items-center justify-between';
                  if (!state.isAnswered) return `${base} ${state.selectedAnswer === choice.id ? 'bg-indigo-100 border-indigo-300' : 'bg-neutral-card hover:bg-neutral-bg'}`;
@@ -861,7 +833,6 @@
                  if (state.selectedAnswer === choice.id && !choice.correct) return `${base} bg-red-50 border-red-300`;
                  return `${base} bg-neutral-card opacity-60`;
             };
-
             return question.choices.map(choice => `
                  <button data-choice-id="${choice.id}" class="quiz-choice ${getChoiceClass(choice)}">
                      <span><span class="font-bold mr-2 uppercase">${choice.id})</span> ${choice.text}</span>
@@ -875,46 +846,33 @@
             let isCorrect = (question.type === 'fill-in-the-blank')
                 ? state.selectedAnswer.trim().toLowerCase() === question.answer.toLowerCase()
                 : question.choices.find(c => c.id === state.selectedAnswer)?.correct;
-
             if (isCorrect) state.score++;
-            
-            // Si es una pregunta de rellenar el espacio, asegurarse de que se guarda la respuesta escrita
             const selectedText = question.type === 'fill-in-the-blank' ? state.selectedAnswer : state.selectedAnswer;
-
-            // Verificar si la respuesta ya fue guardada (para no duplicar al hacer clic varias veces en "Comprobar")
             const existingAnswerIndex = state.userAnswers.findIndex(ua => ua.questionId === question.id);
             if (existingAnswerIndex !== -1) {
                 state.userAnswers[existingAnswerIndex] = { questionId: question.id, selected: selectedText, isCorrect: isCorrect };
             } else {
                 state.userAnswers.push({ questionId: question.id, selected: selectedText, isCorrect: isCorrect });
             }
-
             state.isAnswered = true;
             renderQuiz();
         }
 
         function attachQuizListeners(question, state) {
              lucide.createIcons();
-             
-             // Listener para Finalizar Cuestionario
              document.getElementById('quiz-finish-early').addEventListener('click', () => {
-                  // Si la pregunta actual ha sido respondida, se avanza el índice antes de mostrar resultados.
                   if (state.isAnswered) {
-                       // Solo contamos la pregunta actual si aún no ha sido registrada como parte de userAnswers
                        const existing = state.userAnswers.find(ua => ua.questionId === question.id);
                        if (!existing && state.selectedAnswer) {
-                            checkAnswer(question, state); // Guardamos la respuesta actual si existe
+                            checkAnswer(question, state);
                        }
-                       state.currentIndex = state.combinedQuizzes.length; // Simulamos que el índice llegó al final
+                       state.currentIndex = state.combinedQuizzes.length;
                   } else {
-                       // Si no ha respondido la actual, simplemente saltamos.
                        state.currentIndex = state.combinedQuizzes.length;
                   }
-                  // Marcamos como finalización temprana
                   state.isEarlyFinish = true;
                   renderQuizResults(state.combinedQuizzes, state.isEarlyFinish);
              });
-             
              if (state.isAnswered) {
                  document.getElementById('quiz-next').addEventListener('click', () => {
                      state.currentIndex++;
@@ -924,7 +882,6 @@
                  });
              } else {
                  document.getElementById('quiz-check').addEventListener('click', () => checkAnswer(question, state));
-                 
                  if (question.type === 'fill-in-the-blank') {
                       const input = document.getElementById('fill-in-blank-input');
                       input.addEventListener('input', () => {
@@ -946,14 +903,24 @@
         function renderQuizResults(data, isEarlyFinish = false) {
             const state = AppState.quizzes;
             const totalAnswered = state.userAnswers.length;
+            if (totalAnswered > 0) {
+                const correctAnswers = state.userAnswers.filter(a => a.isCorrect).length;
+                const record = {
+                    type: 'quizzes',
+                    date: new Date().toISOString(),
+                    totalQuestions: data.length,
+                    answeredCount: totalAnswered,
+                    correct: correctAnswers,
+                    incorrect: totalAnswered - correctAnswers
+                };
+                addProgressRecord(state.selectedTemarioIndices, record);
+            }
             const currentScore = state.userAnswers.filter(a => a.isCorrect).length;
             const totalQuestions = data.length;
             const percentage = (totalAnswered > 0) ? (currentScore / totalAnswered) * 100 : 0;
             const circumference = 2 * Math.PI * 54;
-            
             let title = isEarlyFinish ? "Cuestionario Finalizado (Parcial)" : "¡Quiz Terminado!";
             let subtitle = `Aciertos: ${currentScore} / Respondidas: ${totalAnswered} / Total: ${totalQuestions}`;
-
             quizContainer.innerHTML = `
                  <div class="bg-neutral-card p-8 rounded-lg border text-center">
                       <h2 class="text-2xl font-bold mb-4">${title}</h2>
@@ -973,7 +940,6 @@
                       </div>
                  </div>`;
             document.getElementById('quiz-restart').addEventListener('click', () => {
-                // Reinicia, pero mantiene el conjunto de preguntas combinadas para que pueda empezar de nuevo
                 const combinedQuizzes = data;
                 resetQuizState();
                 AppState.quizzes.combinedQuizzes = combinedQuizzes;
@@ -987,33 +953,24 @@
             }
         }
         
-        // Función para generar PDF de la Revisión del Quiz
         function downloadQuizReviewAsPDF(state, data) {
             const doc = new jsPDF();
             const margin = 10;
             const lineHeight = 6;
             const maxWidth = 180;
-
             const totalAnswered = state.userAnswers.length;
             const currentScore = state.userAnswers.filter(a => a.isCorrect).length;
             const totalQuestions = data.length;
             const percentage = (totalAnswered > 0) ? (currentScore / totalAnswered) * 100 : 0;
             const numIncorrect = totalAnswered - currentScore;
-
             const selectedTopicNames = AppState.quizzes.selectedTemarioIndices
                 .map(index => MOCK_DATA.temarios[index].name)
                 .join(', ');
-
-            // 1. Añadir encabezado de marca
-            // Título interno del PDF: SIMPLIFICADO: "Revisión de Quiz" + Nombres de los temas
             let y = addSkemiaHeader(doc, `Revisión de Quiz: ${selectedTopicNames}`);
-
-            // --- RESUMEN DE RESULTADOS ---
             doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
             doc.text("Resumen de Resultados:", margin, y);
             y += lineHeight + 2;
-
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, y); y += lineHeight;
@@ -1022,61 +979,41 @@
             doc.text(`Aciertos: ${currentScore}`, margin, y); y += lineHeight;
             doc.text(`Errores: ${numIncorrect}`, margin, y); y += lineHeight;
             doc.text(`Preguntas Totales en el mazo: ${totalQuestions}`, margin, y); y += lineHeight;
-            
-            // Separador
             y += lineHeight;
             doc.line(margin, y, 200, y); 
             y += lineHeight; 
-            
-            // --- SECCIÓN DE PREGUNTAS ---
             doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
             doc.text("Revisión Pregunta por Pregunta:", margin, y);
             y += lineHeight * 2;
-
             data.forEach((question, index) => {
                  const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
-                 
-                 // Solo incluir preguntas respondidas
                  if (userAnswer) {
-                      // Comprobación de página completa
                       if (y > 270) {
                           doc.addPage();
-                          // Título de la página de continuación, ajustado
                           y = addSkemiaHeader(doc, `Revisión de Quiz: ${selectedTopicNames} (Cont.)`);
                           doc.setFontSize(14);
                           doc.setFont("helvetica", "bold");
                           doc.text("Revisión Pregunta por Pregunta (Cont.):", margin, y);
                           y += lineHeight * 2;
                       }
-
-                      // Definir el texto de estado
                       const status = userAnswer.isCorrect ? "CORRECTO" : "INCORRECTO";
                       const statusColor = userAnswer.isCorrect ? "#22c55e" : "#ef4444";
-                      
                       doc.setFontSize(10);
                       doc.setTextColor(0); 
-
-                      // Pregunta
                       doc.setFont("helvetica", "bold");
                       let promptText = doc.splitTextToSize(`P. ${index + 1}: ${question.prompt}`, maxWidth);
                       doc.text(promptText, margin, y);
                       y += promptText.length * lineHeight;
-
-                      // Estado (Color)
                       doc.setTextColor(statusColor);
                       doc.text(`Resultado: ${status}`, margin + 5, y);
                       y += lineHeight;
-
-                      // Tu Respuesta
                       doc.setTextColor(0); 
                       doc.setFont("helvetica", "normal");
                       let userResp = userAnswer.selected || "Sin respuesta";
                       let userRespText = doc.splitTextToSize(`Tu Respuesta: ${userResp}`, maxWidth);
                       doc.text(userRespText, margin + 5, y);
                       y += userRespText.length * lineHeight;
-                      
-                      // Respuesta Correcta
                       let correctDisplay = '';
                       if (question.type === 'multiple-choice') {
                           const correctChoice = question.choices.find(c => c.correct);
@@ -1084,13 +1021,10 @@
                       } else if (question.type === 'fill-in-the-blank') {
                           correctDisplay = question.answer;
                       }
-
                       doc.setTextColor("#22c55e");
                       let correctText = doc.splitTextToSize(`Respuesta Correcta: ${correctDisplay}`, maxWidth);
                       doc.text(correctText, margin + 5, y);
                       y += correctText.length * lineHeight;
-                      
-                      // Explicación (si existe)
                       if (question.explanation) {
                           doc.setTextColor(100); 
                           doc.setFont("helvetica", "italic");
@@ -1099,17 +1033,12 @@
                           y += explanationText.length * lineHeight;
                           doc.setFont("helvetica", "normal");
                       }
-
-                      y += lineHeight; // Espacio entre tarjetas
+                      y += lineHeight;
                  }
             });
-
-            // Generar nombre de archivo con el nombre del tema
             const firstTopicName = MOCK_DATA.temarios[AppState.quizzes.selectedTemarioIndices[0]]?.name || 'Quiz';
-            // Limpiar y acortar el nombre del tema para el nombre del archivo
             const cleanTopicName = firstTopicName.replace(/[^\w\s]/gi, '').slice(0, 30).trim().replace(/\s/g, '_');
             const fileName = `Skemia_Revision_Quiz_${cleanTopicName}.pdf`;
-
             doc.save(fileName);
         }
 
@@ -1117,17 +1046,10 @@
             const state = AppState.quizzes;
             const data = state.combinedQuizzes;
             let reviewHtml = `<div class="bg-neutral-card p-8 rounded-lg border"><h2 class="text-2xl font-bold mb-6 text-center">Revisión del Cuestionario</h2><div class="space-y-6">`;
-
-            // Filtramos las preguntas para incluir solo las que el usuario respondió (userAnswers tiene el registro)
             data.forEach((question, index) => {
                  const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
-                 
-                 // Solo mostramos la revisión si hay una respuesta registrada
                  if (userAnswer) {
-                      // Mantenemos los emojis para la visualización en pantalla (HTML)
                       let resultIndicator = userAnswer.isCorrect ? `<span class="text-feedback-correct font-bold">Correcto</span>` : `<span class="text-feedback-incorrect font-bold">Incorrecto</span>`;
-                      
-                      // Determinar la respuesta correcta para preguntas de opción múltiple
                       let correctAnswerDisplay = '';
                       if (question.type === 'multiple-choice') {
                           const correctChoice = question.choices.find(c => c.correct);
@@ -1137,7 +1059,6 @@
                       } else if (question.type === 'fill-in-the-blank' && !userAnswer.isCorrect) {
                           correctAnswerDisplay = `<p class="text-sm mt-1 text-green-700">Respuesta correcta: <strong class="font-bold">${question.answer}</strong></p>`;
                       }
-
                       reviewHtml += `
                            <div class="p-4 border rounded-md">
                                <p class="font-semibold text-base mb-2">P. ${index + 1}: ${question.prompt}</p>
@@ -1147,7 +1068,6 @@
                            </div>`;
                  }
             });
-
             reviewHtml += `</div>
             <div class="mt-8 flex justify-center space-x-4">
                 <button id="quiz-review-download" class="px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 flex items-center space-x-2 text-sm">
@@ -1157,17 +1077,13 @@
                 <button id="quiz-back-to-results" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Volver a Resultados</button>
             </div>
             </div>`;
-            
             quizContainer.innerHTML = reviewHtml;
-            lucide.createIcons(); // Crear iconos para el botón de descarga
-
+            lucide.createIcons();
             document.getElementById('quiz-review-download').addEventListener('click', () => {
                 downloadQuizReviewAsPDF(state, data);
             });
-            
             document.getElementById('quiz-back-to-results').addEventListener('click', () => {
                  state.isReviewMode = false;
-                 // Usamos AppState.quizzes.isEarlyFinish para saber qué título mostrar en el resumen.
                  renderQuizResults(data, AppState.quizzes.isEarlyFinish); 
             });
         }
@@ -1176,7 +1092,6 @@
         function setupMultiSelect(type) {
             const state = AppState[type];
             const dropdown = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-dropdown`);
-            
             dropdown.innerHTML = '';
             MOCK_DATA.temarios.forEach((temario, index) => {
                  const isChecked = state.selectedTemarioIndices.includes(index);
@@ -1194,7 +1109,6 @@
             const buttonText = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-text`);
             const startBtn = document.getElementById(`start-${type === 'flashcards' ? 'flashcards' : 'quiz'}-btn`);
             const selectedCount = state.selectedTemarioIndices.length;
-
             if (selectedCount === 0) {
                  buttonText.textContent = 'Selecciona temarios...';
                  buttonText.classList.add('text-text-secondary');
@@ -1232,7 +1146,6 @@
         });
 
         document.addEventListener('click', (e) => {
-             // Ocultar dropdowns al hacer clic fuera
              if (!e.target.closest('#multi-select-container')) {
                  document.getElementById('multi-select-dropdown')?.classList.add('hidden');
              }
@@ -1246,7 +1159,6 @@
             const container = document.getElementById('mindmap-url-container');
             const temario = MOCK_DATA.temarios[AppState.currentTemarioIndex];
             const url = temario.mindmapUrl;
-
             if (url) {
                  container.innerHTML = `
                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
@@ -1267,41 +1179,19 @@
 
         function renderDownloadPage(pageType) {
             const config = {
-                 audios: {
-                     containerId: 'audios-download-container',
-                     urlKey: 'allAudiosUrl',
-                     description: 'Haz clic en el botón para descargar un único archivo ZIP con los audios de todos los temarios disponibles.',
-                     buttonText: 'Descargar Audios'
-                 },
-                 report: {
-                     containerId: 'report-download-container',
-                     urlKey: 'allReportsUrl',
-                     description: 'Al pulsar el botón, descargarás un archivo ZIP que contiene las guías de estudio para cada tema, todas redactadas en formato de informe.',
-                     buttonText: 'Descargar Informes'
-                 },
-                 fuentes: {
-                     containerId: 'fuentes-download-container',
-                     urlKey: 'allFuentesUrl',
-                     description: 'Haz clic en el botón para descargar un único archivo ZIP con todas las fuentes y materiales de referencia.',
-                     buttonText: 'Descargar Fuentes'
-                 }
+                 audios: { containerId: 'audios-download-container', urlKey: 'allAudiosUrl', description: 'Haz clic en el botón para descargar un único archivo ZIP con los audios de todos los temarios disponibles.', buttonText: 'Descargar Audios' },
+                 report: { containerId: 'report-download-container', urlKey: 'allReportsUrl', description: 'Al pulsar el botón, descargarás un archivo ZIP que contiene las guías de estudio para cada tema, todas redactadas en formato de informe.', buttonText: 'Descargar Informes' },
+                 fuentes: { containerId: 'fuentes-download-container', urlKey: 'allFuentesUrl', description: 'Haz clic en el botón para descargar un único archivo ZIP con todas las fuentes y materiales de referencia.', buttonText: 'Descargar Fuentes' }
             };
-
             const pageConfig = config[pageType];
             if (!pageConfig) return;
-
             const container = document.getElementById(pageConfig.containerId);
             const url = MOCK_DATA[pageConfig.urlKey];
-
             if (url && container) {
                  container.innerHTML = `
                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
-                         <p class="text-text-secondary mb-6 max-w-md mx-auto">
-                             ${pageConfig.description}
-                         </p>
-                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">
-                             ${pageConfig.buttonText}
-                         </a>
+                         <p class="text-text-secondary mb-6 max-w-md mx-auto">${pageConfig.description}</p>
+                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">${pageConfig.buttonText}</a>
                      </div>`;
             } else if (container) {
                  container.innerHTML = `
@@ -1310,24 +1200,139 @@
                      </div>`;
             }
         }
+
+        function renderProgressPage() {
+            const progressData = getProgressData();
+            const container = document.getElementById('progress-container');
+            const modal = document.getElementById('session-details-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            container.innerHTML = '';
+
+            if (Object.keys(progressData).length === 0) {
+                container.innerHTML = '<p class="text-center text-text-secondary">Aún no has completado ninguna sesión de estudio. ¡Tu progreso aparecerá aquí!</p>';
+                return;
+            }
+
+            MOCK_DATA.temarios.forEach((temario, index) => {
+                const temarioId = `temario-${index}`;
+                const records = progressData[temarioId];
+
+                if (records && records.length > 0) {
+                    let tableRows = '';
+                    records.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(rec => {
+                        const d = new Date(rec.date);
+                        const formattedDate = `${d.toLocaleDateString('es-ES')} <span class="text-xs text-gray-500">${d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</span>`;
+                        let resultsText = '';
+                        
+                        if (rec.type === 'flashcards') {
+                            resultsText = `Estudiadas: ${rec.studiedCount}/${rec.totalInDeck}`;
+                        } else if (rec.type === 'quizzes') {
+                            resultsText = `Aciertos: ${rec.correct}/${rec.answeredCount}`;
+                        }
+
+                        tableRows += `
+                            <tr class="border-t hover:bg-gray-50">
+                                <td class="p-3 text-sm">${formattedDate}</td>
+                                <td class="p-3 text-sm">${rec.type === 'flashcards' ? 'Flashcards' : 'Quiz'}</td>
+                                <td class="p-3 text-sm">${resultsText}</td>
+                                <td class="p-3 text-center">
+                                    <button class="view-details-btn text-indigo-600 hover:underline text-sm" data-session-id="${rec.sessionId}" data-temario-id="${temarioId}">Ver</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    const temarioHtml = `
+                        <div>
+                            <h2 class="text-2xl font-semibold border-b pb-2 mb-4">${temario.name}</h2>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white rounded-lg shadow-md">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha y Hora</th>
+                                            <th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                            <th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resultados</th>
+                                            <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        ${tableRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>`;
+                    container.innerHTML += temarioHtml;
+                }
+            });
+
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sessionId = e.target.dataset.sessionId;
+                    const temarioId = e.target.dataset.temarioId;
+                    const record = progressData[temarioId]?.find(r => r.sessionId === sessionId);
+
+                    if (!record) return;
+
+                    let detailsHtml = '';
+                    if (record.type === 'flashcards') {
+                        const studied = record.studiedCount;
+                        const greenPercent = studied > 0 ? ((record.easy / studied) * 100).toFixed(1) : 0;
+                        const yellowPercent = studied > 0 ? ((record.medium / studied) * 100).toFixed(1) : 0;
+                        const redPercent = studied > 0 ? ((record.hard / studied) * 100).toFixed(1) : 0;
+
+                        modalTitle.textContent = 'Detalles de Flashcards';
+                        detailsHtml = `
+                            <ul class="space-y-2 text-sm">
+                                <li><strong>Tarjetas estudiadas:</strong> ${studied} de ${record.totalInDeck}</li>
+                                <li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Fácil (Verde):</strong> ${record.easy} tarjetas (${greenPercent}%)</li>
+                                <li class="flex items-center"><div class="w-4 h-4 rounded-full bg-yellow-400 mr-2"></div><strong>Medio (Amarillo):</strong> ${record.medium} tarjetas (${yellowPercent}%)</li>
+                                <li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Difícil (Rojo):</strong> ${record.hard} tarjetas (${redPercent}%)</li>
+                            </ul>
+                        `;
+                    } else if (record.type === 'quizzes') {
+                        const answered = record.answeredCount;
+                        const correctPercent = answered > 0 ? ((record.correct / answered) * 100).toFixed(1) : 0;
+                        
+                        modalTitle.textContent = 'Detalles de Quiz';
+                        detailsHtml = `
+                             <ul class="space-y-2 text-sm">
+                                <li><strong>Preguntas respondidas:</strong> ${answered} de ${record.totalQuestions}</li>
+                                <li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${record.correct} (${correctPercent}%)</li>
+                                <li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${record.incorrect}</li>
+                            </ul>
+                        `;
+                    }
+
+                    modalContent.innerHTML = detailsHtml;
+                    modal.classList.remove('hidden');
+                });
+            });
+
+            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
         
-        // --- LÓGICA DEL MENÚ DE NAVEGACIÓN MÓVIL (AÑADIDA AQUÍ) ---
+        // --- LÓGICA DEL MENÚ DE NAVEGACIÓN MÓVIL ---
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const navigationLinks = document.getElementById('navigation-links');
 
         if (mobileMenuButton && navigationLinks) {
-            // 1. Mostrar/Ocultar el menú al hacer clic en el botón de hamburguesa
             mobileMenuButton.addEventListener('click', () => {
                 navigationLinks.classList.toggle('hidden');
             });
 
-            // 2. Ocultar el menú al hacer clic en un enlace (mejora la experiencia en móvil)
-            //    También nos aseguramos de que el comportamiento de navegación original siga funcionando.
             const allNavLinks = navigationLinks.querySelectorAll('a');
             allNavLinks.forEach(link => {
                 link.addEventListener('click', () => {
-                    // Oculta el menú desplegable solo si estamos en vista móvil
-                    if (window.innerWidth < 768) { // 768px es el breakpoint 'md' de Tailwind
+                    if (window.innerWidth < 768) {
                         navigationLinks.classList.add('hidden');
                     }
                 });
