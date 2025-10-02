@@ -454,15 +454,17 @@
         }
 
         fcShuffleStudyBtn.addEventListener('click', () => {
-            const { combinedFlashcards: combined } = AppState.flashcards;
-            if (combined.length === 0) return;
-            for (let i = combined.length - 1; i > 0; i--) {
+            const state = AppState.flashcards;
+            if (state.combinedFlashcards.length === 0) return;
+            for (let i = state.combinedFlashcards.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [combined[i], combined[j]] = [combined[j], combined[i]];
+                [state.combinedFlashcards[i], state.combinedFlashcards[j]] = [state.combinedFlashcards[j], state.combinedFlashcards[i]];
             }
-            AppState.flashcards.currentIndex = 0;
-            AppState.flashcards.isFlipped = false;
+            state.currentIndex = 0;
+            state.isFlipped = false;
             renderFlashcard();
+            fcShuffleStudyBtn.classList.add('bg-brand-accent', 'text-white');
+            setTimeout(() => fcShuffleStudyBtn.classList.remove('bg-brand-accent', 'text-white'), 300);
         });
 
         function renderFlashcard() {
@@ -552,6 +554,19 @@
             renderQuiz();
         });
         
+        quizShuffleStudyBtn.addEventListener('click', () => {
+            const state = AppState.quizzes;
+            if (state.combinedQuizzes.length === 0) return;
+            for (let i = state.combinedQuizzes.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [state.combinedQuizzes[i], state.combinedQuizzes[j]] = [state.combinedQuizzes[j], state.combinedQuizzes[i]];
+            }
+            resetQuizState();
+            renderQuiz();
+            quizShuffleStudyBtn.classList.add('bg-brand-accent', 'text-white');
+            setTimeout(() => quizShuffleStudyBtn.classList.remove('bg-brand-accent', 'text-white'), 300);
+        });
+
         changeQuizTopicsBtn.addEventListener('click', () => setupQuizzesPage());
 
         function resetQuizState() {
