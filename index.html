@@ -467,6 +467,73 @@
             setTimeout(() => fcShuffleStudyBtn.classList.remove('bg-brand-accent', 'text-white'), 300);
         });
 
+        function addSkemiaHeader(doc, title) {
+            const margin = 10, lineHeight = 6, titleFontSize = 14;
+            let y = 15;
+            const logoText = "Skemia";
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const logoWidth = doc.getStringUnitWidth(logoText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+            doc.setFontSize(20);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor("#5F476B");
+            doc.text(logoText, margin, y);
+            doc.setFontSize(titleFontSize);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            const logoEnd = margin + logoWidth;
+            const titleStartX = logoEnd + 5; 
+            const availableWidthForTitle = pageWidth - titleStartX - margin;
+            if (doc.getStringUnitWidth(title) * titleFontSize / doc.internal.scaleFactor > availableWidthForTitle) {
+                const splitTitle = doc.splitTextToSize(title, availableWidthForTitle);
+                doc.text(splitTitle, titleStartX, y, { align: 'left' });
+                y += splitTitle.length * lineHeight;
+            } else {
+                const centerPoint = titleStartX + (availableWidthForTitle / 2);
+                doc.text(title, centerPoint, y, { align: 'center' });
+                y += lineHeight;
+            }
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(150);
+            doc.text("Material propiedad de Skemia. Prohibida su difusión, reproducción o distribución.", margin, y);
+            y += lineHeight;
+            doc.line(margin, y, pageWidth - margin, y);
+            y += lineHeight + 5;
+            return y;
+        }
+
+        function downloadFlashcardsAsPDF() {
+            if (AppState.flashcards.combinedFlashcards.length === 0) return alert("No hay tarjetas para descargar.");
+            const doc = new jsPDF();
+            const { combinedFlashcards, selectedTemarioIndices } = AppState.flashcards;
+            const topicNames = selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name).join(', ');
+            let y = addSkemiaHeader(doc, `Mazo de Flashcards: ${topicNames}`);
+            combinedFlashcards.forEach((card, index) => {
+                if (y > 280) {
+                    doc.addPage();
+                    y = addSkemiaHeader(doc, `Mazo de Flashcards: ${topicNames}`);
+                }
+                doc.setFontSize(14).setFont("helvetica", "bold").text(`Tarjeta ${index + 1}:`, 10, y);
+                y += 7;
+                doc.setFontSize(10).setFont("helvetica", "bold").text("P: ", 15, y);
+                doc.setFont("helvetica", "normal");
+                const frontLines = doc.splitTextToSize(card.front, 170);
+                doc.text(frontLines, 20, y);
+                y += (frontLines.length * 7) + 2;
+                doc.setFont("helvetica", "bold").text("R: ", 15, y);
+                doc.setFont("helvetica", "normal");
+                const backLines = doc.splitTextToSize(card.back, 170);
+                doc.text(backLines, 20, y);
+                y += (backLines.length * 7) + 3.5;
+                doc.line(10, y, 200, y);
+                y += 7;
+            });
+            const fileName = `Skemia_Flashcards_${(MOCK_DATA.temarios[selectedTemarioIndices[0]]?.name || 'Mazo').replace(/[^\w\s]/gi, '').slice(0, 20).trim()}.pdf`;
+            doc.save(fileName);
+        }
+
+        fcDownloadBtn.addEventListener('click', downloadFlashcardsAsPDF);
+
         function renderFlashcard() {
             const state = AppState.flashcards;
             const currentData = state.combinedFlashcards;
@@ -710,6 +777,47 @@
                 });
             }
         }
+        
+        function downloadQuizReviewAsPDF(state, data) {
+            const doc = new jsPDF();
+            const { userAnswers, selectedTemarioIndices } = state;
+            const score = userAnswers.filter(a => a.isCorrect).length;
+            const topicNames = selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name).join(', ');
+            let y = addSkemiaHeader(doc, `Revisión de Quiz: ${topicNames}`);
+            doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, 10, y);
+            y += 10;
+            data.forEach((question, index) => {
+                const userAnswer = userAnswers.find(ua => ua.questionId === question.id);
+                if (userAnswer) {
+                    if (y > 270) {
+                        doc.addPage();
+                        y = addSkemiaHeader(doc, `Revisión de Quiz (Cont.)`);
+                    }
+                    const status = userAnswer.isCorrect ? "CORRECTO" : "INCORRECTO";
+                    const statusColor = userAnswer.isCorrect ? "#22c55e" : "#ef4444";
+                    doc.setFontSize(10).setFont("helvetica", "bold").text(`P. ${index + 1}: ${question.prompt}`, 10, y);
+                    y += 6;
+                    doc.setTextColor(statusColor).text(`Resultado: ${status}`, 15, y);
+                    y += 6;
+                    doc.setTextColor(0).setFont("helvetica", "normal").text(`Tu Respuesta: ${userAnswer.selected}`, 15, y);
+                    y += 6;
+                    if (!userAnswer.isCorrect) {
+                        let correctDisplay = question.type === 'fill-in-the-blank' ? question.answer : question.choices.find(c => c.correct)?.text || 'N/A';
+                        doc.setTextColor("#22c55e").text(`Respuesta Correcta: ${correctDisplay}`, 15, y);
+                        y += 6;
+                    }
+                    if (question.explanation) {
+                        doc.setTextColor(100).setFont("helvetica", "italic");
+                        const explanationLines = doc.splitTextToSize(`Explicación: ${question.explanation}`, 180);
+                        doc.text(explanationLines, 15, y);
+                        y += explanationLines.length * 6;
+                    }
+                    y += 4;
+                }
+            });
+            const fileName = `Skemia_Revision_Quiz_${(MOCK_DATA.temarios[selectedTemarioIndices[0]]?.name || 'Quiz').replace(/[^\w\s]/gi, '').slice(0, 20).trim()}.pdf`;
+            doc.save(fileName);
+        }
 
         function renderQuizReview() {
             const state = AppState.quizzes;
@@ -729,8 +837,10 @@
                       reviewHtml += `<div class="p-4 border rounded-md"><p class="font-semibold text-base mb-2">P. ${index + 1}: ${question.prompt}</p><p class="text-sm">Tu respuesta: <span class="font-mono p-1 bg-gray-100 rounded text-sm">${userAnswer.selected}</span> - ${resultIndicator}</p>${correctAnswerDisplay}${question.explanation ? `<p class="text-sm mt-2 text-text-secondary">${question.explanation}</p>` : ''}</div>`;
                  }
             });
-            reviewHtml += `</div><div class="mt-8 flex justify-center space-x-4"><button id="quiz-back-to-results" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Volver a Resultados</button></div></div>`;
+            reviewHtml += `</div><div class="mt-8 flex justify-center items-center flex-wrap gap-4"><button id="quiz-review-download" class="px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 flex items-center space-x-2 text-sm"><i data-lucide="download" class="w-4 h-4"></i><span>Descargar Revisión (PDF)</span></button><button id="quiz-back-to-results" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Volver a Resultados</button></div></div>`;
             quizContainer.innerHTML = reviewHtml;
+            lucide.createIcons();
+            document.getElementById('quiz-review-download').addEventListener('click', () => downloadQuizReviewAsPDF(state, data));
             document.getElementById('quiz-back-to-results').addEventListener('click', () => {
                  state.isReviewMode = false;
                  renderQuizResults(data, state.isEarlyFinish); 
