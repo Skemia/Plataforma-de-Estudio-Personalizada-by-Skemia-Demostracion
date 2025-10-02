@@ -289,57 +289,28 @@
     </footer>
 
     <script>
-    // Aseguramos que la librería jspdf esté disponible globalmente
     const { jsPDF } = window.jspdf;
 
     document.addEventListener('DOMContentLoaded', async () => {
 
         let MOCK_DATA;
 
-        // --- CARGA DE DATOS ---
         try {
             const response = await fetch('datos.json');
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
             MOCK_DATA = await response.json();
         } catch (error) {
             console.error("Error crítico: No se pudieron cargar los datos de la aplicación.", error);
-            document.querySelector('main').innerHTML = `
-                <div class="text-center p-8 bg-red-50 border border-red-200 rounded-lg">
-                    <h1 class="text-2xl font-bold text-red-700">Error al Cargar Contenido</h1>
-                    <p class="text-gray-600 mt-2">No se pudo obtener la información necesaria para la aplicación. Por favor, revisa la consola de desarrollador (F12) o intenta recargar la página.</p>
-                </div>`;
+            document.querySelector('main').innerHTML = `<div class="text-center p-8 bg-red-50 border border-red-200 rounded-lg"><h1 class="text-2xl font-bold text-red-700">Error al Cargar Contenido</h1><p class="text-gray-600 mt-2">No se pudo obtener la información necesaria para la aplicación. Por favor, revisa la consola (F12) o recarga la página.</p></div>`;
             return;
         }
         
-        // --- ESTADO Y LÓGICA DE LA APLICACIÓN ---
         let AppState = {
             currentTemarioIndex: 0,
-            flashcards: {
-                selectedTemarioIndices: [],
-                combinedFlashcards: [],
-                currentIndex: 0,
-                isFlipped: false,
-                isShuffled: false,
-                originalOrder: [],
-                shuffledOrder: [],
-                difficulty: {}
-            },
-            quizzes: {
-                selectedTemarioIndices: [],
-                combinedQuizzes: [],
-                currentIndex: 0,
-                selectedAnswer: null,
-                isAnswered: false,
-                score: 0,
-                userAnswers: [],
-                isReviewMode: false,
-                isEarlyFinish: false, 
-            }
+            flashcards: { selectedTemarioIndices: [], combinedFlashcards: [], currentIndex: 0, isFlipped: false, difficulty: {} },
+            quizzes: { selectedTemarioIndices: [], combinedQuizzes: [], currentIndex: 0, selectedAnswer: null, isAnswered: false, score: 0, userAnswers: [], isReviewMode: false, isEarlyFinish: false }
         };
 
-        // --- MÓDULO DE PROGRESO ---
         function getProgressData() {
             const data = localStorage.getItem('skemiaProgress');
             return data ? JSON.parse(data) : {};
@@ -349,21 +320,18 @@
             localStorage.setItem('skemiaProgress', JSON.stringify(progressData));
         }
 
-        function addProgressRecord(temarioIndices, temarioNames, record) {
+        function addProgressRecord(temarioNames, record) {
             const progress = getProgressData();
-            const sessionId = `${record.type.slice(0, 2)}-${new Date().getTime()}`;
-            record.sessionId = sessionId;
-            record.temarioNames = temarioNames; 
+            record.sessionId = `${record.type.slice(0, 2)}-${new Date().getTime()}`;
+            record.temarioNames = temarioNames;
             const generalLogId = 'allSessions';
-            if (!progress[generalLogId]) {
-                progress[generalLogId] = [];
-            }
+            if (!progress[generalLogId]) progress[generalLogId] = [];
             progress[generalLogId].push(record);
             saveProgressData(progress);
         }
 
         const pages = document.querySelectorAll('.page-content');
-        const navLinks = document.querySelectorAll('nav a');
+        const navLinks = document.querySelectorAll('header nav a');
         const temarioSelectors = document.querySelectorAll('.temario-selector');
         document.getElementById('footer-year').textContent = new Date().getFullYear();
 
@@ -385,7 +353,8 @@
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                navigateTo(e.currentTarget.dataset.page);
+                const page = e.currentTarget.dataset.page;
+                if (page) navigateTo(page);
             });
         });
         
@@ -407,16 +376,9 @@
             navigateTo(activePageId);
         }
         
-        document.querySelectorAll('.temario-selector').forEach(selector => 
-            selector.addEventListener('change', handleTemarioChange)
-        );
-        
-        document.getElementById('start-studying-btn').addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo('flashcards');
-        });
+        document.querySelectorAll('.temario-selector').forEach(selector => selector.addEventListener('change', handleTemarioChange));
+        document.getElementById('start-studying-btn').addEventListener('click', (e) => { e.preventDefault(); navigateTo('flashcards'); });
 
-        // --- MÓDULO DE FLASHCARDS ---
         const fcSelectionArea = document.getElementById('flashcard-selection-area');
         const fcStudyArea = document.getElementById('flashcard-study-area');
         const startFlashcardsBtn = document.getElementById('start-flashcards-btn');
@@ -434,7 +396,7 @@
         function setupFlashcardsPage() {
             setupMultiSelect('flashcards');
             fcSelectionArea.classList.remove('hidden');
-            fcStudyArea.classList.add('hidden', 'flex');
+            fcStudyArea.classList.add('hidden');
         }
 
         startFlashcardsBtn.addEventListener('click', () => {
@@ -443,9 +405,7 @@
             fcStudyArea.classList.add('flex');
             resetFlashcardState();
             let combined = [];
-            AppState.flashcards.selectedTemarioIndices.forEach(index => {
-                combined.push(...MOCK_DATA.temarios[index].flashcards);
-            });
+            AppState.flashcards.selectedTemarioIndices.forEach(index => combined.push(...MOCK_DATA.temarios[index].flashcards));
             if (fcShuffleBtn.classList.contains('active')) {
                 for (let i = combined.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -463,24 +423,17 @@
                 const counts = { easy: 0, medium: 0, hard: 0 };
                 studiedCards.forEach(cardId => {
                     const difficulty = state.difficulty[cardId];
-                    if (counts[difficulty] !== undefined) {
-                        counts[difficulty]++;
-                    }
+                    if (counts[difficulty] !== undefined) counts[difficulty]++;
                 });
                 const temarioNames = state.selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name);
-                const record = {
-                    type: 'flashcards',
-                    date: new Date().toISOString(),
-                    totalInDeck: state.combinedFlashcards.length,
-                    studiedCount: studiedCards.length,
-                    ...counts
-                };
-                addProgressRecord(state.selectedTemarioIndices, temarioNames, record);
-                const originalButtonContent = saveFlashcardProgressBtn.innerHTML;
+                const record = { type: 'flashcards', date: new Date().toISOString(), totalInDeck: state.combinedFlashcards.length, studiedCount: studiedCards.length, ...counts };
+                addProgressRecord(temarioNames, record);
+                
+                const originalContent = saveFlashcardProgressBtn.innerHTML;
                 saveFlashcardProgressBtn.innerHTML = `<span>¡Guardado!</span>`;
                 saveFlashcardProgressBtn.disabled = true;
                 setTimeout(() => {
-                    saveFlashcardProgressBtn.innerHTML = originalButtonContent;
+                    saveFlashcardProgressBtn.innerHTML = originalContent;
                     lucide.createIcons();
                     saveFlashcardProgressBtn.disabled = false;
                 }, 1500);
@@ -494,61 +447,31 @@
             setupFlashcardsPage();
         });
 
-        if (saveFlashcardProgressBtn) {
-            saveFlashcardProgressBtn.addEventListener('click', saveCurrentFlashcardProgress);
-        }
+        saveFlashcardProgressBtn.addEventListener('click', saveCurrentFlashcardProgress);
 
         function resetFlashcardState() {
-             AppState.flashcards = {
-                 ...AppState.flashcards,
-                 combinedFlashcards: [],
-                 currentIndex: 0,
-                 isFlipped: false,
-                 originalOrder: [],
-                 shuffledOrder: [],
-                 difficulty: {}
-             };
+            AppState.flashcards = { ...AppState.flashcards, combinedFlashcards: [], currentIndex: 0, isFlipped: false, difficulty: {} };
         }
 
-        function shuffleAndRestartFlashcards() {
-            // ... (Sin cambios)
-        }
-
-        if (fcShuffleStudyBtn) {
-             fcShuffleStudyBtn.addEventListener('click', shuffleAndRestartFlashcards);
-        }
-
-        function addSkemiaHeader(doc, title) {
-            // ... (Sin cambios)
-        }
-
-        function downloadFlashcardsAsPDF() {
-            // ... (Sin cambios)
-        }
-
-        if (fcDownloadBtn) {
-            fcDownloadBtn.addEventListener('click', downloadFlashcardsAsPDF);
-        }
+        fcShuffleStudyBtn.addEventListener('click', () => {
+            const { combinedFlashcards: combined } = AppState.flashcards;
+            if (combined.length === 0) return;
+            for (let i = combined.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [combined[i], combined[j]] = [combined[j], combined[i]];
+            }
+            AppState.flashcards.currentIndex = 0;
+            AppState.flashcards.isFlipped = false;
+            renderFlashcard();
+        });
 
         function renderFlashcard() {
             const state = AppState.flashcards;
             const currentData = state.combinedFlashcards;
             if (currentData.length === 0) {
-                 fcContainer.innerHTML = `<div class="w-full h-80 flex items-center justify-center"><p class="text-text-secondary">No hay flashcards en los temarios seleccionados.</p></div>`;
-                 fcCounter.textContent = '0 / 0';
-                 fcDifficultyControls.style.display = 'none';
-                 fcPrevBtn.disabled = true;
-                 fcNextBtn.disabled = true;
-                 fcDownloadBtn.disabled = true;
-                 return;
-            } else {
-                 fcDifficultyControls.style.display = 'block';
-                 fcPrevBtn.disabled = false;
-                 fcNextBtn.disabled = false;
-                 fcDownloadBtn.disabled = false;
-            }
-            if (state.originalOrder.length === 0) {
-                 state.originalOrder = currentData.map((_, index) => index);
+                fcContainer.innerHTML = `<div class="w-full h-80 flex items-center justify-center"><p class="text-text-secondary">No hay flashcards.</p></div>`;
+                fcCounter.textContent = '0 / 0';
+                return;
             }
             const card = currentData[state.currentIndex];
             const difficulty = state.difficulty[card.id];
@@ -556,19 +479,7 @@
             if (difficulty === 'easy') borderColor = 'border-green-400';
             else if (difficulty === 'medium') borderColor = 'border-yellow-400';
             else if (difficulty === 'hard') borderColor = 'border-red-400';
-            fcContainer.innerHTML = `
-                <div id="card-flipper" class="w-full h-80 rounded-xl shadow-xl cursor-pointer perspective-1000">
-                    <div class="relative w-full h-full transition-transform duration-700 transform-style-3d ${state.isFlipped ? 'rotate-y-180' : ''}">
-                        <div class="absolute w-full h-full backface-hidden flex flex-col items-center justify-center p-6 bg-white border-4 ${borderColor} rounded-xl">
-                            <p class="text-2xl font-semibold text-text-primary text-center">${card.front}</p>
-                            <div class="absolute bottom-4 right-4 text-gray-300"><i data-lucide="rotate-cw" class="w-5 h-5"></i></div>
-                        </div>
-                        <div class="absolute w-full h-full backface-hidden rotate-y-180 flex flex-col items-center justify-center p-6 bg-neutral-bg border-4 ${borderColor} rounded-xl">
-                            <p class="text-lg text-text-secondary text-center">${card.back}</p>
-                            ${card.audioUrl ? `<audio controls src="${card.audioUrl}" class="mt-4" onclick="event.stopPropagation()"></audio>` : ''}
-                        </div>
-                    </div>
-                </div>`;
+            fcContainer.innerHTML = `<div id="card-flipper" class="w-full h-80 rounded-xl shadow-xl cursor-pointer perspective-1000"><div class="relative w-full h-full transition-transform duration-700 transform-style-3d ${state.isFlipped ? 'rotate-y-180' : ''}"><div class="absolute w-full h-full backface-hidden flex flex-col items-center justify-center p-6 bg-white border-4 ${borderColor} rounded-xl"><p class="text-2xl font-semibold text-text-primary text-center">${card.front}</p><div class="absolute bottom-4 right-4 text-gray-300"><i data-lucide="rotate-cw" class="w-5 h-5"></i></div></div><div class="absolute w-full h-full backface-hidden rotate-y-180 flex flex-col items-center justify-center p-6 bg-neutral-bg border-4 ${borderColor} rounded-xl"><p class="text-lg text-text-secondary text-center">${card.back}</p>${card.audioUrl ? `<audio controls src="${card.audioUrl}" class="mt-4" onclick="event.stopPropagation()"></audio>` : ''}</div></div></div>`;
             fcCounter.textContent = `${state.currentIndex + 1} / ${currentData.length}`;
             document.getElementById('card-flipper').addEventListener('click', () => {
                 state.isFlipped = !state.isFlipped;
@@ -579,39 +490,33 @@
         
         fcPrevBtn.addEventListener('click', () => {
             const state = AppState.flashcards;
-            const dataLength = state.combinedFlashcards.length;
-            if (dataLength === 0) return;
+            if (state.combinedFlashcards.length === 0) return;
             state.isFlipped = false;
-            state.currentIndex = (state.currentIndex - 1 + dataLength) % dataLength;
+            state.currentIndex = (state.currentIndex - 1 + state.combinedFlashcards.length) % state.combinedFlashcards.length;
             renderFlashcard();
         });
         
         fcNextBtn.addEventListener('click', () => {
             const state = AppState.flashcards;
-            const dataLength = state.combinedFlashcards.length;
-            if (dataLength === 0) return;
+            if (state.combinedFlashcards.length === 0) return;
             state.isFlipped = false;
-            state.currentIndex = (state.currentIndex + 1) % dataLength;
+            state.currentIndex = (state.currentIndex + 1) % state.combinedFlashcards.length;
             renderFlashcard();
         });
         
-        fcShuffleBtn.addEventListener('click', () => {
-            fcShuffleBtn.classList.toggle('active');
-        });
+        fcShuffleBtn.addEventListener('click', () => fcShuffleBtn.classList.toggle('active'));
 
         fcDifficultyControls.addEventListener('click', (e) => {
             if (e.target.matches('button')) {
                 const difficulty = e.target.dataset.difficulty;
                 const state = AppState.flashcards;
                 const card = state.combinedFlashcards[state.currentIndex];
-                if (!card) return;
-                state.difficulty[card.id] = difficulty;
+                if (card) state.difficulty[card.id] = difficulty;
                 renderFlashcard();
                 setTimeout(() => fcNextBtn.click(), 200);
             }
         });
 
-        // --- MÓDULO DE QUIZZES ---
         const quizContainer = document.getElementById('quiz-container');
         const quizSelectionArea = document.getElementById('quiz-selection-area');
         const quizStudyArea = document.getElementById('quiz-study-area');
@@ -623,13 +528,10 @@
         function setupQuizzesPage() {
             setupMultiSelect('quizzes');
             quizSelectionArea.classList.remove('hidden');
-            quizStudyArea.classList.add('hidden', 'flex');
-            quizShuffleSelectionBtn.classList.remove('active');
+            quizStudyArea.classList.add('hidden');
         }
 
-        quizShuffleSelectionBtn.addEventListener('click', () => {
-            quizShuffleSelectionBtn.classList.toggle('active');
-        });
+        quizShuffleSelectionBtn.addEventListener('click', () => quizShuffleSelectionBtn.classList.toggle('active'));
 
         startQuizBtn.addEventListener('click', () => {
             quizSelectionArea.classList.add('hidden');
@@ -638,9 +540,7 @@
             resetQuizState();
             let combined = [];
             AppState.quizzes.selectedTemarioIndices.forEach(index => {
-                if(MOCK_DATA.temarios[index].quizzes){
-                    combined.push(...MOCK_DATA.temarios[index].quizzes);
-                }
+                if (MOCK_DATA.temarios[index].quizzes) combined.push(...MOCK_DATA.temarios[index].quizzes);
             });
             if (quizShuffleSelectionBtn.classList.contains('active')) {
                 for (let i = combined.length - 1; i > 0; i--) {
@@ -651,105 +551,78 @@
             AppState.quizzes.combinedQuizzes = combined;
             renderQuiz();
         });
-
-        quizShuffleStudyBtn.addEventListener('click', () => {
-            // ... (Sin cambios)
-        });
-
+        
         changeQuizTopicsBtn.addEventListener('click', () => setupQuizzesPage());
 
         function resetQuizState() {
-             AppState.quizzes = {
-                 ...AppState.quizzes,
-                 combinedQuizzes: AppState.quizzes.combinedQuizzes,
-                 currentIndex: 0,
-                 selectedAnswer: null,
-                 isAnswered: false,
-                 score: 0,
-                 userAnswers: [],
-                 isReviewMode: false,
-                 isEarlyFinish: false, 
-             };
+            const { combinedQuizzes, selectedTemarioIndices } = AppState.quizzes;
+            AppState.quizzes = { ...AppState.quizzes, selectedTemarioIndices, combinedQuizzes, currentIndex: 0, selectedAnswer: null, isAnswered: false, score: 0, userAnswers: [], isReviewMode: false, isEarlyFinish: false };
         }
 
         function renderQuiz() {
             const state = AppState.quizzes;
             const data = state.combinedQuizzes;
+
             if (data.length === 0) {
-                 quizContainer.innerHTML = `<p class="text-text-secondary text-center">No hay quizzes en los temarios seleccionados.</p>`;
-                 return;
+                quizContainer.innerHTML = `<p class="text-text-secondary text-center">No hay quizzes.</p>`;
+                return;
             }
             if (state.isReviewMode) {
-                 renderQuizReview();
-                 return;
+                renderQuizReview();
+                return;
             }
             if (state.currentIndex >= data.length) {
-                 renderQuizResults(data);
-                 return;
+                renderQuizResults(data);
+                return;
             }
+
             const question = data[state.currentIndex];
             let feedbackBoxHtml = '';
             if (state.isAnswered) {
-                 const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
-                 let correctAnsHtml = '';
-                 if (userAnswer && !userAnswer.isCorrect && question.type === 'fill-in-the-blank') {
-                      correctAnsHtml = `<p class="text-sm text-green-700">Respuesta correcta: <strong class="font-bold">${question.answer}</strong></p>`;
-                 }
-                 if (question.explanation || correctAnsHtml) {
-                      feedbackBoxHtml = `
-                          <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-                               ${correctAnsHtml}
-                               ${question.explanation ? `<p class="mt-2">${question.explanation}</p>` : ''}
-                          </div>
-                      `;
-                 }
+                const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
+                let correctAnsHtml = '';
+                if (userAnswer && !userAnswer.isCorrect && question.type === 'fill-in-the-blank') {
+                    correctAnsHtml = `<p class="text-sm text-green-700">Respuesta correcta: <strong class="font-bold">${question.answer}</strong></p>`;
+                }
+                if (question.explanation || correctAnsHtml) {
+                    feedbackBoxHtml = `<div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">${correctAnsHtml}${question.explanation ? `<p class="mt-2">${question.explanation}</p>` : ''}</div>`;
+                }
             }
             
-            const actionButtonsHtml = `
-                <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-3 z-30 md:static md:bg-transparent md:border-none md:p-0">
-                    <div class="container mx-auto max-w-2xl flex items-center justify-between gap-4">
-                        <button id="quiz-finish-early" class="w-1/2 md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center space-x-2 text-sm">
-                            <i data-lucide="flag" class="w-4 h-4"></i>
-                            <span>Finalizar y Guardar</span>
-                        </button>
-                        <div class="w-1/2 md:w-auto">
-                            ${state.isAnswered
-                              ? `<button id="quiz-next" class="w-full px-6 py-2 bg-brand-accent text-white rounded-md">Siguiente</button>`
-                              : `<button id="quiz-check" class="w-full px-6 py-2 bg-brand-accent text-white rounded-md disabled:bg-gray-300" ${!state.selectedAnswer ? 'disabled' : ''}>Comprobar</button>`
-                            }
-                        </div>
-                    </div>
-                </div>
-            `;
+            const actionButtonsHtml = `<div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-3 z-30 md:static md:bg-transparent md:border-none md:p-0"><div class="container mx-auto max-w-2xl flex items-center justify-between gap-4"><button id="quiz-finish-early" class="w-1/2 md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center space-x-2 text-sm"><i data-lucide="flag" class="w-4 h-4"></i><span>Finalizar y Guardar</span></button><div class="w-1/2 md:w-auto">${state.isAnswered ? `<button id="quiz-next" class="w-full px-6 py-2 bg-brand-accent text-white rounded-md">Siguiente</button>`: `<button id="quiz-check" class="w-full px-6 py-2 bg-brand-accent text-white rounded-md disabled:bg-gray-300" ${!state.selectedAnswer ? 'disabled' : ''}>Comprobar</button>`}</div></div></div>`;
             
-            quizContainer.innerHTML = `
-                 <div class="progress-bar-container mb-4">
-                      <div class="progress-bar" style="width: ${((state.currentIndex) / data.length) * 100}%"></div>
-                 </div>
-                 <p class="text-right text-sm text-text-secondary mb-8">Pregunta ${state.currentIndex + 1} de ${data.length}</p>
-                 <div class="bg-neutral-card p-8 rounded-lg border">
-                      <h2 class="text-2xl font-semibold mb-6">${question.prompt}</h2>
-                      <div class="space-y-3">${renderQuestionInput(question, state)}</div>
-                      ${feedbackBoxHtml}
-                 </div>
-                 ${actionButtonsHtml}
-            `;
+            quizContainer.innerHTML = `<div class="progress-bar-container mb-4"><div class="progress-bar" style="width: ${((state.currentIndex) / data.length) * 100}%"></div></div><p class="text-right text-sm text-text-secondary mb-8">Pregunta ${state.currentIndex + 1} de ${data.length}</p><div class="bg-neutral-card p-8 rounded-lg border"><h2 class="text-2xl font-semibold mb-6">${question.prompt}</h2><div class="space-y-3">${renderQuestionInput(question, state)}</div>${feedbackBoxHtml}</div>${actionButtonsHtml}`;
             attachQuizListeners(question, state);
         }
 
         function renderQuestionInput(question, state) {
-            // ... (Sin cambios)
+            if (question.type === 'fill-in-the-blank') {
+                 let inputClass = 'w-full p-3 border border-neutral-border rounded-md';
+                 if (state.isAnswered) {
+                      const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
+                      if (userAnswer) {
+                          inputClass += userAnswer.isCorrect ? ' bg-green-50 border-green-300 text-green-800' : ' bg-red-50 border-red-300 text-red-800';
+                      }
+                 }
+                 return `<div class="relative"><input type="text" id="fill-in-blank-input" class="${inputClass}" placeholder="Escribe tu respuesta..." value="${state.selectedAnswer || ''}" ${state.isAnswered ? 'disabled' : ''}></div>`;
+            }
+            const getChoiceClass = (choice) => {
+                 let base = 'w-full text-left p-4 border rounded-md transition-colors flex items-center justify-between';
+                 if (!state.isAnswered) return `${base} ${state.selectedAnswer === choice.id ? 'bg-indigo-100 border-indigo-300' : 'bg-neutral-card hover:bg-neutral-bg'}`;
+                 if (choice.correct) return `${base} bg-green-50 border-green-300 text-green-800 font-bold`;
+                 if (state.selectedAnswer === choice.id && !choice.correct) return `${base} bg-red-50 border-red-300`;
+                 return `${base} bg-neutral-card opacity-60`;
+            };
+            return question.choices.map(choice => `<button data-choice-id="${choice.id}" class="quiz-choice ${getChoiceClass(choice)}"><span><span class="font-bold mr-2 uppercase">${choice.id})</span> ${choice.text}</span>${state.isAnswered && choice.correct ? '<span class="text-feedback-correct"><i data-lucide="check-circle" class="w-5 h-5"></i></span>' : ''}${state.isAnswered && state.selectedAnswer === choice.id && !choice.correct ? '<span class="text-feedback-incorrect"><i data-lucide="x-circle" class="w-5 h-5"></i></span>' : ''}</button>`).join('');
         }
 
         function checkAnswer(question, state) {
             if (!state.selectedAnswer) return;
-            let isCorrect = (question.type === 'fill-in-the-blank')
-                ? state.selectedAnswer.trim().toLowerCase() === question.answer.toLowerCase()
-                : !!question.choices.find(c => c.id === state.selectedAnswer)?.correct;
+            let isCorrect = (question.type === 'fill-in-the-blank') ? state.selectedAnswer.trim().toLowerCase() === question.answer.toLowerCase() : !!question.choices.find(c => c.id === state.selectedAnswer)?.correct;
             
             if (isCorrect) state.score++;
-
-            const selectedText = question.type === 'fill-in-the-blank' ? state.selectedAnswer : state.selectedAnswer;
+            const selectedText = (question.type === 'fill-in-the-blank') ? state.selectedAnswer : question.choices.find(c => c.id === state.selectedAnswer)?.text || state.selectedAnswer;
+            
             const existingAnswerIndex = state.userAnswers.findIndex(ua => ua.questionId === question.id);
             if (existingAnswerIndex !== -1) {
                 state.userAnswers[existingAnswerIndex] = { questionId: question.id, selected: selectedText, isCorrect: isCorrect };
@@ -761,7 +634,34 @@
         }
 
         function attachQuizListeners(question, state) {
-             // ... (Sin cambios)
+             lucide.createIcons();
+             document.getElementById('quiz-finish-early').addEventListener('click', () => {
+                  state.isEarlyFinish = true;
+                  state.currentIndex = AppState.quizzes.combinedQuizzes.length;
+                  renderQuizResults(AppState.quizzes.combinedQuizzes, true);
+             });
+             if (state.isAnswered) {
+                 document.getElementById('quiz-next').addEventListener('click', () => {
+                     state.currentIndex++;
+                     state.isAnswered = false;
+                     state.selectedAnswer = null;
+                     renderQuiz();
+                 });
+             } else {
+                 document.getElementById('quiz-check').addEventListener('click', () => checkAnswer(question, state));
+                 if (question.type === 'fill-in-the-blank') {
+                      document.getElementById('fill-in-blank-input').addEventListener('input', (e) => {
+                          state.selectedAnswer = e.target.value;
+                          document.getElementById('quiz-check').disabled = !e.target.value.trim();
+                      });
+                 } else {
+                      document.querySelectorAll('.quiz-choice').forEach(btn => btn.addEventListener('click', () => {
+                          if (state.isAnswered) return;
+                          state.selectedAnswer = btn.dataset.choiceId;
+                          renderQuiz();
+                      }));
+                 }
+             }
         }
 
         function renderQuizResults(data, isEarlyFinish = false) {
@@ -771,149 +671,188 @@
 
             if (totalAnswered > 0) {
                 const temarioNames = state.selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name);
-                const record = {
-                    type: 'quizzes',
-                    date: new Date().toISOString(),
-                    totalQuestions: data.length,
-                    answeredCount: totalAnswered,
-                    correct: currentScore,
-                    incorrect: totalAnswered - currentScore
-                };
-                addProgressRecord(state.selectedTemarioIndices, temarioNames, record);
+                const record = { type: 'quizzes', date: new Date().toISOString(), totalQuestions: data.length, answeredCount: totalAnswered, correct: currentScore, incorrect: totalAnswered - currentScore };
+                addProgressRecord(temarioNames, record);
             }
             
             const percentage = (totalAnswered > 0) ? (currentScore / totalAnswered) * 100 : 0;
             const circumference = 2 * Math.PI * 54;
-            let title = isEarlyFinish ? "Cuestionario Finalizado (Parcial)" : "¡Quiz Terminado!";
-            let subtitle = `Aciertos: ${currentScore} / Respondidas: ${totalAnswered} / Total: ${data.length}`;
-            quizContainer.innerHTML = `
-                 <div class="bg-neutral-card p-8 rounded-lg border text-center">
-                      <h2 class="text-2xl font-bold mb-4">${title}</h2>
-                      <div class="my-8 flex justify-center">
-                           <svg id="quiz-results-chart" class="w-32 h-32" viewBox="0 0 120 120">
-                               <circle class="text-gray-200" stroke-width="12" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60"/>
-                               <circle class="text-brand-accent" stroke-width="12" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference - (percentage / 100) * circumference}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60" style="transition: stroke-dashoffset 0.8s ease-out;"/>
-                               <text x="60" y="65" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#1a1a1a">${Math.round(percentage)}%</text>
-                           </svg>
-                      </div>
-                      <p class="text-lg">Tu puntuación: <strong>${currentScore} de ${totalAnswered}</strong></p>
-                      <p class="text-sm text-text-secondary">${subtitle}</p>
-                      ${isEarlyFinish && totalAnswered < data.length ? `<p class="text-sm text-red-500 mt-2">Atención: Solo se revisarán las ${totalAnswered} preguntas respondidas.</p>` : ''}
-                      <div class="mt-8 flex justify-center space-x-4">
-                           <button id="quiz-restart" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Reiniciar</button>
-                           ${totalAnswered > 0 ? `<button id="quiz-review" class="px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90">Revisar Respuestas</button>` : ''}
-                      </div>
-                 </div>`;
+            const title = isEarlyFinish ? "Cuestionario Finalizado (Parcial)" : "¡Quiz Terminado!";
+            const subtitle = `Aciertos: ${currentScore} / Respondidas: ${totalAnswered} / Total: ${data.length}`;
+            
+            quizContainer.innerHTML = `<div class="bg-neutral-card p-8 rounded-lg border text-center"><h2 class="text-2xl font-bold mb-4">${title}</h2><div class="my-8 flex justify-center"><svg id="quiz-results-chart" class="w-32 h-32" viewBox="0 0 120 120"><circle class="text-gray-200" stroke-width="12" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60"/><circle class="text-brand-accent" stroke-width="12" stroke-dasharray="${circumference}" stroke-dashoffset="${circumference - (percentage / 100) * circumference}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="54" cx="60" cy="60" style="transition: stroke-dashoffset 0.8s ease-out;"/><text x="60" y="65" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#1a1a1a">${Math.round(percentage)}%</text></svg></div><p class="text-lg">Tu puntuación: <strong>${currentScore} de ${totalAnswered}</strong></p><p class="text-sm text-text-secondary">${subtitle}</p>${isEarlyFinish && totalAnswered < data.length ? `<p class="text-sm text-red-500 mt-2">Atención: Solo se revisarán las ${totalAnswered} preguntas respondidas.</p>` : ''}<div class="mt-8 flex justify-center space-x-4"><button id="quiz-restart" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Reiniciar</button>${totalAnswered > 0 ? `<button id="quiz-review" class="px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90">Revisar Respuestas</button>` : ''}</div></div>`;
+            
             document.getElementById('quiz-restart').addEventListener('click', () => {
-                const combinedQuizzes = data;
                 resetQuizState();
-                AppState.quizzes.combinedQuizzes = combinedQuizzes;
                 renderQuiz();
             });
-            if (totalAnswered > 0) {
-                const reviewBtn = document.getElementById('quiz-review');
-                if(reviewBtn) {
-                    reviewBtn.addEventListener('click', () => {
-                        state.isReviewMode = true;
-                        renderQuizReview();
-                    });
-                }
+
+            const reviewBtn = document.getElementById('quiz-review');
+            if (reviewBtn) {
+                reviewBtn.addEventListener('click', () => {
+                    state.isReviewMode = true;
+                    renderQuizReview();
+                });
             }
-        }
-        
-        function downloadQuizReviewAsPDF(state, data) {
-            // ... (Sin cambios)
         }
 
         function renderQuizReview() {
             const state = AppState.quizzes;
             const data = state.combinedQuizzes;
             let reviewHtml = `<div class="bg-neutral-card p-8 rounded-lg border"><h2 class="text-2xl font-bold mb-6 text-center">Revisión del Cuestionario</h2><div class="space-y-6">`;
-            
             data.forEach((question, index) => {
                  const userAnswer = state.userAnswers.find(ua => ua.questionId === question.id);
                  if (userAnswer) {
                       let resultIndicator = userAnswer.isCorrect ? `<span class="text-feedback-correct font-bold">Correcto</span>` : `<span class="text-feedback-incorrect font-bold">Incorrecto</span>`;
                       let correctAnswerDisplay = '';
-                      if (question.type === 'multiple-choice') {
+                      if (question.type === 'multiple-choice' && !userAnswer.isCorrect) {
                           const correctChoice = question.choices.find(c => c.correct);
-                          if (correctChoice) {
-                              correctAnswerDisplay = `<p class="text-sm mt-1 text-green-700">Respuesta correcta: <span class="font-bold uppercase">${correctChoice.id})</span> ${correctChoice.text}</p>`;
-                          }
+                          if (correctChoice) correctAnswerDisplay = `<p class="text-sm mt-1 text-green-700">Respuesta correcta: <span class="font-bold uppercase">${correctChoice.id})</span> ${correctChoice.text}</p>`;
                       } else if (question.type === 'fill-in-the-blank' && !userAnswer.isCorrect) {
                           correctAnswerDisplay = `<p class="text-sm mt-1 text-green-700">Respuesta correcta: <strong class="font-bold">${question.answer}</strong></p>`;
                       }
-                      reviewHtml += `
-                           <div class="p-4 border rounded-md">
-                               <p class="font-semibold text-base mb-2">P. ${index + 1}: ${question.prompt}</p>
-                               <p class="text-sm">Tu respuesta: <span class="font-mono p-1 bg-gray-100 rounded text-sm">${userAnswer.selected}</span> - ${resultIndicator}</p>
-                               ${correctAnswerDisplay}
-                               ${question.explanation ? `<p class="text-sm mt-2 text-text-secondary">${question.explanation}</p>` : ''}
-                           </div>`;
+                      reviewHtml += `<div class="p-4 border rounded-md"><p class="font-semibold text-base mb-2">P. ${index + 1}: ${question.prompt}</p><p class="text-sm">Tu respuesta: <span class="font-mono p-1 bg-gray-100 rounded text-sm">${userAnswer.selected}</span> - ${resultIndicator}</p>${correctAnswerDisplay}${question.explanation ? `<p class="text-sm mt-2 text-text-secondary">${question.explanation}</p>` : ''}</div>`;
                  }
             });
-
-            reviewHtml += `</div>
-            <div class="mt-8 flex justify-center space-x-4">
-                <button id="quiz-review-download" class="px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 flex items-center space-x-2 text-sm">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>Descargar Revisión (PDF)</span>
-                </button>
-                <button id="quiz-back-to-results" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Volver a Resultados</button>
-            </div>
-            </div>`;
-            
+            reviewHtml += `</div><div class="mt-8 flex justify-center space-x-4"><button id="quiz-back-to-results" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Volver a Resultados</button></div></div>`;
             quizContainer.innerHTML = reviewHtml;
-            lucide.createIcons();
-
-            document.getElementById('quiz-review-download').addEventListener('click', () => {
-                downloadQuizReviewAsPDF(state, data);
-            });
             document.getElementById('quiz-back-to-results').addEventListener('click', () => {
                  state.isReviewMode = false;
-                 renderQuizResults(data, AppState.quizzes.isEarlyFinish); 
+                 renderQuizResults(data, state.isEarlyFinish); 
             });
         }
         
-        // --- LÓGICA GENÉRICA Y MULTI-SELECT ---
         function setupMultiSelect(type) {
-            // ... (Sin cambios)
+            const state = AppState[type];
+            const dropdown = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-dropdown`);
+            dropdown.innerHTML = MOCK_DATA.temarios.map((temario, index) => `<label class="flex items-center p-2 hover:bg-gray-100 cursor-pointer"><input type="checkbox" data-index="${index}" class="mr-2" ${state.selectedTemarioIndices.includes(index) ? 'checked' : ''}><span>${temario.name}</span></label>`).join('');
+            updateMultiSelectButtonText(type);
         }
 
         function updateMultiSelectButtonText(type) {
-            // ... (Sin cambios)
+            const state = AppState[type];
+            const buttonText = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-text`);
+            const startBtn = document.getElementById(`start-${type === 'flashcards' ? 'flashcards' : 'quiz'}-btn`);
+            const count = state.selectedTemarioIndices.length;
+            startBtn.disabled = count === 0;
+            if (count === 0) buttonText.textContent = 'Selecciona temarios...';
+            else if (count === 1) buttonText.textContent = MOCK_DATA.temarios[state.selectedTemarioIndices[0]].name;
+            else buttonText.textContent = `${count} temarios seleccionados`;
         }
         
         ['flashcards', 'quizzes'].forEach(type => {
-            // ... (Sin cambios)
+            const prefix = type === 'flashcards' ? '' : 'quiz-';
+            document.getElementById(`${prefix}multi-select-button`).addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById(`${prefix}multi-select-dropdown`).classList.toggle('hidden');
+            });
+            document.getElementById(`${prefix}multi-select-dropdown`).addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    const state = AppState[type];
+                    if (e.target.checked) state.selectedTemarioIndices.push(index);
+                    else state.selectedTemarioIndices = state.selectedTemarioIndices.filter(i => i !== index);
+                    updateMultiSelectButtonText(type);
+                }
+            });
         });
 
         document.addEventListener('click', (e) => {
-             // ... (Sin cambios)
+             if (!e.target.closest('#multi-select-container')) document.getElementById('multi-select-dropdown')?.classList.add('hidden');
+             if (!e.target.closest('#quiz-multi-select-container')) document.getElementById('quiz-multi-select-dropdown')?.classList.add('hidden');
         });
         
-        // --- MÓDULOS DE URL GENÉRICAS E INFORMES ---
         function renderMindmapPage() {
-            // ... (Sin cambios)
+            const container = document.getElementById('mindmap-url-container');
+            const temario = MOCK_DATA.temarios[AppState.currentTemarioIndex];
+            if (temario && temario.mindmapUrl) {
+                 container.innerHTML = `<div class="bg-neutral-card p-8 border rounded-lg mt-8 text-center"><a href="${temario.mindmapUrl}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90">Abrir Mapa Mental</a><p class="text-text-secondary mt-4 text-sm max-w-md mx-auto">Haz doble clic sobre cualquier nodo para expandir o contraer sus ramificaciones.</p></div>`;
+            } else {
+                 container.innerHTML = `<div class="bg-neutral-card p-8 border rounded-lg mt-8 text-center"><p class="text-text-secondary">No hay mapa mental para este temario.</p></div>`;
+            }
         }
 
         function renderDownloadPage(pageType) {
-            // ... (Sin cambios)
+            const config = {
+                 audios: { containerId: 'audios-download-container', urlKey: 'allAudiosUrl', description: 'Descarga un ZIP con los audios de todos los temarios.', buttonText: 'Descargar Audios' },
+                 report: { containerId: 'report-download-container', urlKey: 'allReportsUrl', description: 'Descarga un ZIP con las guías de estudio en formato informe.', buttonText: 'Descargar Informes' },
+                 fuentes: { containerId: 'fuentes-download-container', urlKey: 'allFuentesUrl', description: 'Descarga un ZIP con todas las fuentes y materiales de referencia.', buttonText: 'Descargar Fuentes' }
+            };
+            const pageConfig = config[pageType];
+            if (!pageConfig) return;
+            const container = document.getElementById(pageConfig.containerId);
+            const url = MOCK_DATA[pageConfig.urlKey];
+            if (url && container) {
+                 container.innerHTML = `<div class="bg-neutral-card p-8 border rounded-lg mt-8 text-center"><p class="text-text-secondary mb-6 max-w-md mx-auto">${pageConfig.description}</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90">${pageConfig.buttonText}</a></div>`;
+            } else if (container) {
+                 container.innerHTML = `<div class="bg-neutral-card p-8 border rounded-lg mt-8 text-center"><p class="text-text-secondary">No hay archivos disponibles.</p></div>`;
+            }
         }
 
         function renderProgressPage() {
-            // ... (Sin cambios en su mayoría, la lógica ya era correcta)
+            const progressData = getProgressData();
+            const container = document.getElementById('progress-container');
+            const modal = document.getElementById('session-details-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            container.innerHTML = '';
+            const allRecords = progressData.allSessions || [];
+
+            if (allRecords.length === 0) {
+                container.innerHTML = '<p class="text-center text-text-secondary">Aún no has completado ninguna sesión de estudio. ¡Tu progreso aparecerá aquí!</p>';
+                return;
+            }
+
+            let tableRows = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date)).map(rec => {
+                const d = new Date(rec.date);
+                const formattedDate = `${d.toLocaleDateString('es-ES')} <span class="text-xs text-gray-500">${d.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</span>`;
+                let resultsText = rec.type === 'flashcards' ? `Estudiadas: ${rec.studiedCount}/${rec.totalInDeck}` : `Aciertos: ${rec.correct}/${rec.answeredCount}`;
+                return `<tr class="border-t hover:bg-gray-50"><td class="p-3 text-sm">${formattedDate}</td><td class="p-3 text-sm">${rec.temarioNames.join(', ')}</td><td class="p-3 text-sm">${rec.type === 'flashcards' ? 'Flashcards' : 'Quiz'}</td><td class="p-3 text-sm">${resultsText}</td><td class="p-3 text-center"><button class="view-details-btn text-indigo-600 hover:underline text-sm" data-session-id="${rec.sessionId}">Ver</button></td></tr>`;
+            }).join('');
+
+            container.innerHTML = `<div class="overflow-x-auto"><table class="min-w-full w-full bg-white rounded-lg shadow-md"><thead class="bg-gray-50"><tr><th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha y Hora</th><th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tema(s)</th><th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th><th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resultados</th><th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th></tr></thead><tbody class="divide-y divide-gray-200">${tableRows}</tbody></table></div>`;
+            
+            container.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sessionId = e.target.dataset.sessionId;
+                    const record = allRecords.find(r => r.sessionId === sessionId);
+                    if (!record) return;
+
+                    let detailsHtml = '';
+                    if (record.type === 'flashcards') {
+                        const { studiedCount: studied, easy, medium, hard, totalInDeck } = record;
+                        const greenPercent = studied > 0 ? ((easy / studied) * 100).toFixed(1) : 0;
+                        const yellowPercent = studied > 0 ? ((medium / studied) * 100).toFixed(1) : 0;
+                        const redPercent = studied > 0 ? ((hard / studied) * 100).toFixed(1) : 0;
+                        modalTitle.textContent = 'Detalles de Flashcards';
+                        detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Tarjetas estudiadas:</strong> ${studied} de ${totalInDeck}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Fácil:</strong> ${easy} (${greenPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-yellow-400 mr-2"></div><strong>Medio:</strong> ${medium} (${yellowPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Difícil:</strong> ${hard} (${redPercent}%)</li></ul>`;
+                    } else if (record.type === 'quizzes') {
+                        const { answeredCount: answered, correct, incorrect, totalQuestions } = record;
+                        const correctPercent = answered > 0 ? ((correct / answered) * 100).toFixed(1) : 0;
+                        modalTitle.textContent = 'Detalles de Quiz';
+                        detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Preguntas respondidas:</strong> ${answered} de ${totalQuestions}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${correct} (${correctPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${incorrect}</li></ul>`;
+                    }
+                    modalContent.innerHTML = detailsHtml;
+                    modal.classList.remove('hidden');
+                });
+            });
+
+            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
         }
         
-        // --- LÓGICA DEL MENÚ DE NAVEGACIÓN MÓVIL ---
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const navigationLinks = document.getElementById('navigation-links');
-
         if (mobileMenuButton && navigationLinks) {
-            // ... (Sin cambios)
+            mobileMenuButton.addEventListener('click', () => navigationLinks.classList.toggle('hidden'));
+            navigationLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+                if (window.innerWidth < 768) navigationLinks.classList.add('hidden');
+            }));
         }
 
-        // --- INICIALIZACIÓN ---
         populateTemarioSelectors();
         navigateTo('home');
         lucide.createIcons();
