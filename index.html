@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skemia - Herramienta Educativa Integrada</title>
-    <!-- Tailwind CSS desde CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librerías para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Iconos (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Estilos personalizados y utilidades de Tailwind */
@@ -70,30 +67,35 @@
 </head>
 <body class="bg-neutral-bg text-text-primary min-h-screen flex flex-col">
 
-    <!-- Header y Navegación -->
-    <header class="bg-neutral-card border-b border-neutral-border sticky top-0 z-10">
+    <header class="bg-neutral-card border-b border-neutral-border sticky top-0 z-20">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="#" class="text-xl font-bold text-brand-accent" data-page="home">Skemia</a>
-            <div class="flex items-center space-x-4 sm:space-x-6 text-text-secondary">
-                <a href="#" class="hover:text-text-primary" data-page="flashcards">Flashcards</a>
-                <a href="#" class="hover:text-text-primary" data-page="quizzes">Quizzes</a>
-                <a href="#" class="hover:text-text-primary" data-page="mindmap">Mapas Mentales</a>
-                <a href="#" class="hover:text-text-primary" data-page="audios">Audios</a>
-                <a href="#" class="hover:text-text-primary" data-page="report">Informes</a>
-                <a href="#" class="hover:text-text-primary" data-page="fuentes">Fuentes</a>
+            
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-text-primary focus:outline-none">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
             </div>
-        </nav>
+            <div id="navigation-links" class="hidden absolute top-full left-0 w-full bg-neutral-card border-b md:border-none md:static md:w-auto md:flex md:items-center md:bg-transparent">
+                <div class="flex flex-col md:flex-row items-start md:items-center p-4 md:p-0 space-y-3 md:space-y-0 md:space-x-6 text-text-secondary w-full">
+                    <a href="#" class="hover:text-text-primary w-full" data-page="flashcards">Flashcards</a>
+                    <a href="#" class="hover:text-text-primary w-full" data-page="quizzes">Quizzes</a>
+                    <a href="#" class="hover:text-text-primary w-full" data-page="mindmap">Mapas Mentales</a>
+                    <a href="#" class="hover:text-text-primary w-full" data-page="audios">Audios</a>
+                    <a href="#" class="hover:text-text-primary w-full" data-page="report">Informes</a>
+                    <a href="#" class="hover:text-text-primary w-full" data-page="fuentes">Fuentes</a>
+                </div>
+            </div>
+            </nav>
     </header>
 
-    <!-- Contenedor principal para las páginas -->
     <main class="flex-grow container mx-auto px-6 py-8">
         
-        <!-- Página de Inicio -->
         <section id="page-home" class="page-content active">
             <div class="grid lg:grid-cols-2 gap-16 items-center min-h-[60vh]">
                 <div class="text-center lg:text-left">
                     <h1 class="text-4xl lg:text-5xl font-bold text-gray-800 mb-4 leading-tight">
-                        Transfarma tu manera de estudiar.
+                        Transforma tu manera de estudiar.
                     </h1>
                     <p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0">
                         Skemia te ofrece todas las herramientas que necesitas en un solo lugar. Flashcards, quizzes, mapas mentales y más, diseñados para un aprendizaje sin distracciones.
@@ -119,7 +121,6 @@
             </div>
         </section>
 
-        <!-- Página de Flashcards -->
         <section id="page-flashcards" class="page-content">
             <div class="flex flex-col items-center space-y-8">
                 <div class="w-full max-w-2xl text-center">
@@ -132,10 +133,8 @@
                                 <i data-lucide="chevron-down" class="w-5 h-5"></i>
                             </button>
                             <div id="multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
-                                <!-- Opciones se inyectarán aquí -->
-                            </div>
+                                </div>
                         </div>
-                        <!-- Este es el botón original. Está bien que esté aquí para establecer la PREFERENCIA inicial de barajar. -->
                         <div class="flex items-center space-x-4 mt-4">
                             <button id="start-flashcards-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
                                 Empezar Estudio
@@ -150,7 +149,6 @@
                 <div id="flashcard-study-area" class="hidden w-full max-w-2xl flex flex-col items-center space-y-8">
                     <div class="w-full flex justify-between items-center">
                            <button id="change-topics-btn" class="text-sm text-indigo-600 hover:underline">Cambiar Temas</button>
-                           <!-- ESTE ES EL NUEVO BOTÓN DE RE-BARAJAR AÑADIDO A LA PANTALLA DE ESTUDIO -->
                            <button id="flashcard-shuffle-study" title="Re-barajar mazo y reiniciar" class="shuffle-btn p-2 bg-neutral-card border rounded-md hover:bg-neutral-bg transition-colors">
                                 <i data-lucide="shuffle" class="w-5 h-5"></i>
                            </button>
@@ -166,7 +164,6 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <button id="flashcard-prev" class="px-4 py-2 bg-neutral-card border rounded-md hover:bg-neutral-bg transition-transform transform hover:scale-105">Anterior</button>
-                        <!-- BOTÓN DE DESCARGA -->
                         <button id="flashcard-download" title="Descargar mazo completo en PDF" class="px-4 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 transition-transform transform hover:scale-105 flex items-center space-x-2 text-sm">
                             <i data-lucide="download" class="w-4 h-4"></i>
                             <span>Descargar Mazo (PDF)</span>
@@ -178,7 +175,6 @@
             </div>
         </section>
 
-        <!-- Página de Quizzes -->
         <section id="page-quizzes" class="page-content">
             <div class="flex flex-col items-center space-y-8">
                 <div class="w-full max-w-2xl text-center">
@@ -191,8 +187,7 @@
                                 <i data-lucide="chevron-down" class="w-5 h-5"></i>
                             </button>
                             <div id="quiz-multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
-                                <!-- Opciones se inyectarán aquí -->
-                            </div>
+                                </div>
                         </div>
                         <div class="flex items-center space-x-4 mt-4">
                             <button id="start-quiz-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
@@ -206,58 +201,50 @@
                 </div>
 
                 <div id="quiz-study-area" class="hidden w-full max-w-2xl flex-col items-center space-y-8">
-                         <div class="w-full flex justify-between items-center">
-                              <button id="change-quiz-topics-btn" class="text-sm text-indigo-600 hover:underline">Cambiar Temas</button>
-                              <button id="quiz-shuffle-study" title="Reiniciar y barajar" class="shuffle-btn p-2 bg-neutral-card border rounded-md hover:bg-neutral-bg transition-colors">
-                                  <i data-lucide="shuffle" class="w-5 h-5"></i>
-                              </button>
-                         </div>
-                         <div id="quiz-container" class="w-full">
-                             <!-- El quiz se renderizará aquí -->
-                         </div>
+                           <div class="w-full flex justify-between items-center">
+                                 <button id="change-quiz-topics-btn" class="text-sm text-indigo-600 hover:underline">Cambiar Temas</button>
+                                 <button id="quiz-shuffle-study" title="Reiniciar y barajar" class="shuffle-btn p-2 bg-neutral-card border rounded-md hover:bg-neutral-bg transition-colors">
+                                     <i data-lucide="shuffle" class="w-5 h-5"></i>
+                                 </button>
+                           </div>
+                           <div id="quiz-container" class="w-full">
+                               </div>
                 </div>
             </div>
         </section>
 
-        <!-- Página de Mapas Mentales -->
         <section id="page-mindmap" class="page-content">
              <div class="max-w-2xl mx-auto text-center">
-                 <h1 class="text-3xl font-bold mb-4">Mapas Mentales</h1>
-                 <div class="mb-6">
-                     <label for="mindmap-temario-select" class="block text-sm font-medium text-text-secondary mb-1">Selecciona un temario:</label>
-                     <select id="mindmap-temario-select" class="temario-selector w-full p-2 border border-neutral-border rounded-md bg-white"></select>
-                 </div>
-                 <div id="mindmap-url-container"></div>
+                  <h1 class="text-3xl font-bold mb-4">Mapas Mentales</h1>
+                  <div class="mb-6">
+                       <label for="mindmap-temario-select" class="block text-sm font-medium text-text-secondary mb-1">Selecciona un temario:</label>
+                       <select id="mindmap-temario-select" class="temario-selector w-full p-2 border border-neutral-border rounded-md bg-white"></select>
+                  </div>
+                  <div id="mindmap-url-container"></div>
              </div>
         </section>
 
-        <!-- Página de Audios -->
         <section id="page-audios" class="page-content">
              <div class="max-w-2xl mx-auto text-center">
-                 <h1 class="text-3xl font-bold mb-4">Audios Descargables</h1>
-                 <div id="audios-download-container">
-                     <!-- Content will be injected by JavaScript -->
-                 </div>
+                  <h1 class="text-3xl font-bold mb-4">Audios Descargables</h1>
+                  <div id="audios-download-container">
+                       </div>
              </div>
         </section>
 
-        <!-- Página de Informes -->
         <section id="page-report" class="page-content">
             <div class="max-w-2xl mx-auto text-center">
                 <h1 class="text-3xl font-bold mb-4">Informes Descargables</h1>
                 <div id="report-download-container">
-                    <!-- Content will be injected by JavaScript -->
-                </div>
+                    </div>
             </div>
         </section>
 
-        <!-- Página de Fuentes -->
         <section id="page-fuentes" class="page-content">
              <div class="max-w-2xl mx-auto text-center">
-                 <h1 class="text-3xl font-bold mb-4">Fuentes de Información</h1>
-                 <div id="fuentes-download-container">
-                     <!-- Content will be injected by JavaScript -->
-                 </div>
+                  <h1 class="text-3xl font-bold mb-4">Fuentes de Información</h1>
+                  <div id="fuentes-download-container">
+                       </div>
              </div>
         </section>
     </main>
@@ -860,10 +847,10 @@
                  }
 
                  return `
-                      <div class="relative">
-                          <input type="text" id="fill-in-blank-input" class="${inputClass}" placeholder="Escribe tu respuesta aquí..." value="${value}" ${state.isAnswered ? 'disabled' : ''}>
-                          ${iconHtml}
-                      </div>
+                     <div class="relative">
+                         <input type="text" id="fill-in-blank-input" class="${inputClass}" placeholder="Escribe tu respuesta aquí..." value="${value}" ${state.isAnswered ? 'disabled' : ''}>
+                         ${iconHtml}
+                     </div>
                  `;
             }
 
@@ -877,17 +864,17 @@
 
             return question.choices.map(choice => `
                  <button data-choice-id="${choice.id}" class="quiz-choice ${getChoiceClass(choice)}">
-                      <span><span class="font-bold mr-2 uppercase">${choice.id})</span> ${choice.text}</span>
-                      ${state.isAnswered && choice.correct ? '<span class="text-feedback-correct"><i data-lucide="check-circle" class="w-5 h-5"></i></span>' : ''}
-                      ${state.isAnswered && state.selectedAnswer === choice.id && !choice.correct ? '<span class="text-feedback-incorrect"><i data-lucide="x-circle" class="w-5 h-5"></i></span>' : ''}
+                     <span><span class="font-bold mr-2 uppercase">${choice.id})</span> ${choice.text}</span>
+                     ${state.isAnswered && choice.correct ? '<span class="text-feedback-correct"><i data-lucide="check-circle" class="w-5 h-5"></i></span>' : ''}
+                     ${state.isAnswered && state.selectedAnswer === choice.id && !choice.correct ? '<span class="text-feedback-incorrect"><i data-lucide="x-circle" class="w-5 h-5"></i></span>' : ''}
                  </button>`).join('');
         }
 
         function checkAnswer(question, state) {
             if (!state.selectedAnswer) return;
             let isCorrect = (question.type === 'fill-in-the-blank')
-                 ? state.selectedAnswer.trim().toLowerCase() === question.answer.toLowerCase()
-                 : question.choices.find(c => c.id === state.selectedAnswer)?.correct;
+                ? state.selectedAnswer.trim().toLowerCase() === question.answer.toLowerCase()
+                : question.choices.find(c => c.id === state.selectedAnswer)?.correct;
 
             if (isCorrect) state.score++;
             
@@ -911,21 +898,21 @@
              
              // Listener para Finalizar Cuestionario
              document.getElementById('quiz-finish-early').addEventListener('click', () => {
-                 // Si la pregunta actual ha sido respondida, se avanza el índice antes de mostrar resultados.
-                 if (state.isAnswered) {
-                     // Solo contamos la pregunta actual si aún no ha sido registrada como parte de userAnswers
-                     const existing = state.userAnswers.find(ua => ua.questionId === question.id);
-                     if (!existing && state.selectedAnswer) {
-                          checkAnswer(question, state); // Guardamos la respuesta actual si existe
-                     }
-                     state.currentIndex = state.combinedQuizzes.length; // Simulamos que el índice llegó al final
-                 } else {
-                     // Si no ha respondido la actual, simplemente saltamos.
-                     state.currentIndex = state.combinedQuizzes.length;
-                 }
-                 // Marcamos como finalización temprana
-                 state.isEarlyFinish = true;
-                 renderQuizResults(state.combinedQuizzes, state.isEarlyFinish);
+                  // Si la pregunta actual ha sido respondida, se avanza el índice antes de mostrar resultados.
+                  if (state.isAnswered) {
+                       // Solo contamos la pregunta actual si aún no ha sido registrada como parte de userAnswers
+                       const existing = state.userAnswers.find(ua => ua.questionId === question.id);
+                       if (!existing && state.selectedAnswer) {
+                            checkAnswer(question, state); // Guardamos la respuesta actual si existe
+                       }
+                       state.currentIndex = state.combinedQuizzes.length; // Simulamos que el índice llegó al final
+                  } else {
+                       // Si no ha respondido la actual, simplemente saltamos.
+                       state.currentIndex = state.combinedQuizzes.length;
+                  }
+                  // Marcamos como finalización temprana
+                  state.isEarlyFinish = true;
+                  renderQuizResults(state.combinedQuizzes, state.isEarlyFinish);
              });
              
              if (state.isAnswered) {
@@ -1262,19 +1249,19 @@
 
             if (url) {
                  container.innerHTML = `
-                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
-                          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">
-                              Abrir Mapa Mental
-                          </a>
-                          <p class="text-text-secondary mt-4 text-sm max-w-md mx-auto">
-                              Nuestros mapas mentales son interactivos. Haz doble clic sobre cualquier idea o nodo para expandir o contraer sus ramificaciones y explorar el contenido a tu propio ritmo.
-                          </p>
-                      </div>`;
+                     <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
+                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">
+                             Abrir Mapa Mental
+                         </a>
+                         <p class="text-text-secondary mt-4 text-sm max-w-md mx-auto">
+                             Nuestros mapas mentales son interactivos. Haz doble clic sobre cualquier idea o nodo para expandir o contraer sus ramificaciones y explorar el contenido a tu propio ritmo.
+                         </p>
+                     </div>`;
             } else {
                  container.innerHTML = `
-                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
-                           <p class="text-text-secondary">No hay un mapa mental asociado a este temario.</p>
-                      </div>`;
+                     <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
+                          <p class="text-text-secondary">No hay un mapa mental asociado a este temario.</p>
+                     </div>`;
             }
         }
 
@@ -1308,22 +1295,45 @@
 
             if (url && container) {
                  container.innerHTML = `
-                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
-                          <p class="text-text-secondary mb-6 max-w-md mx-auto">
-                              ${pageConfig.description}
-                          </p>
-                          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">
-                              ${pageConfig.buttonText}
-                          </a>
-                      </div>`;
+                     <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
+                         <p class="text-text-secondary mb-6 max-w-md mx-auto">
+                             ${pageConfig.description}
+                         </p>
+                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-block px-8 py-3 bg-brand-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-transform transform hover:scale-105">
+                             ${pageConfig.buttonText}
+                         </a>
+                     </div>`;
             } else if (container) {
                  container.innerHTML = `
-                      <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
-                           <p class="text-text-secondary">Actualmente no hay archivos disponibles para descargar.</p>
-                      </div>`;
+                     <div class="bg-neutral-card p-8 border border-neutral-border rounded-lg mt-8 text-center">
+                          <p class="text-text-secondary">Actualmente no hay archivos disponibles para descargar.</p>
+                     </div>`;
             }
         }
         
+        // --- LÓGICA DEL MENÚ DE NAVEGACIÓN MÓVIL (AÑADIDA AQUÍ) ---
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const navigationLinks = document.getElementById('navigation-links');
+
+        if (mobileMenuButton && navigationLinks) {
+            // 1. Mostrar/Ocultar el menú al hacer clic en el botón de hamburguesa
+            mobileMenuButton.addEventListener('click', () => {
+                navigationLinks.classList.toggle('hidden');
+            });
+
+            // 2. Ocultar el menú al hacer clic en un enlace (mejora la experiencia en móvil)
+            //    También nos aseguramos de que el comportamiento de navegación original siga funcionando.
+            const allNavLinks = navigationLinks.querySelectorAll('a');
+            allNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    // Oculta el menú desplegable solo si estamos en vista móvil
+                    if (window.innerWidth < 768) { // 768px es el breakpoint 'md' de Tailwind
+                        navigationLinks.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
         // --- INICIALIZACIÓN ---
         populateTemarioSelectors();
         navigateTo('home');
