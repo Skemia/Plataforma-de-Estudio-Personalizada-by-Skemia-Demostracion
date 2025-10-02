@@ -802,7 +802,8 @@
                     const qText = `P. ${index + 1}: ${question.prompt}`;
                     const qLines = doc.splitTextToSize(qText, maxWidth);
                     doc.setFontSize(10).setFont("helvetica", "bold");
-                    qLines.forEach(line => { doc.text(line, margin, y); y += lineHeight; });
+                    doc.text(qLines, margin, y);
+                    y += qLines.length * lineHeight;
 
                     const status = userAnswer.isCorrect ? "CORRECTO" : "INCORRECTO";
                     const statusColor = userAnswer.isCorrect ? "#22c55e" : "#ef4444";
@@ -812,20 +813,22 @@
                     const userResponseText = `Tu Respuesta: ${userAnswer.selected}`;
                     const userResponseLines = doc.splitTextToSize(userResponseText, maxWidth - 5);
                     doc.setTextColor(0).setFont("helvetica", "normal");
-                    userResponseLines.forEach(line => { doc.text(line, margin + 5, y); y += lineHeight; });
-
+                    doc.text(userResponseLines, margin + 5, y);
+                    y += userResponseLines.length * lineHeight;
+                    
                     if (!userAnswer.isCorrect) {
                         let correctDisplay = question.type === 'fill-in-the-blank' ? question.answer : question.choices.find(c => c.correct)?.text || 'N/A';
                         const correctDisplayText = `Respuesta Correcta: ${correctDisplay}`;
                         const correctDisplayLines = doc.splitTextToSize(correctDisplayText, maxWidth - 5);
-                        doc.setTextColor("#22c55e");
-                        correctDisplayLines.forEach(line => { doc.text(line, margin + 5, y); y += lineHeight; });
+                        doc.setTextColor("#22c55e").text(correctDisplayLines, margin + 5, y);
+                        y += correctDisplayLines.length * lineHeight;
                     }
 
                     if (question.explanation) {
                         doc.setTextColor(100).setFont("helvetica", "italic");
                         const explanationLines = doc.splitTextToSize(`Explicación: ${question.explanation}`, maxWidth - 5);
-                        explanationLines.forEach(line => { doc.text(line, margin + 5, y); y += lineHeight; });
+                        doc.text(explanationLines, margin + 5, y);
+                        y += explanationLines.length * lineHeight;
                     }
                     y += 4;
                 }
