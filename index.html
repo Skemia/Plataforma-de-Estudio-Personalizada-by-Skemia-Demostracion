@@ -786,8 +786,8 @@
             let y = addSkemiaHeader(doc, `Revisión de Quiz: ${topicNames}`);
             
             const margin = 10;
-            const lineHeight = 7;
-            const maxWidth = 180; // Ancho máximo de línea más conservador, como en Flashcards.
+            const lineHeight = 7; // Usamos el mismo que en Flashcards PDF
+            const maxWidth = 180; // Ancho máximo de línea conservador
 
             doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, margin, y);
             y += 10;
@@ -800,6 +800,7 @@
                         y = addSkemiaHeader(doc, `Revisión de Quiz (Cont.)`);
                     }
                     
+                    doc.setTextColor(0); // Resetear a color negro por defecto
                     doc.setFontSize(10).setFont("helvetica", "bold");
                     const qText = `P. ${index + 1}: ${question.prompt}`;
                     const qLines = doc.splitTextToSize(qText, maxWidth);
@@ -808,10 +809,16 @@
 
                     const status = userAnswer.isCorrect ? "CORRECTO" : "INCORRECTO";
                     const statusColor = userAnswer.isCorrect ? "#22c55e" : "#ef4444";
-                    doc.setTextColor(statusColor).text(`Resultado: ${status}`, margin + 5, y);
+                    
+                    doc.setFont("helvetica", "normal");
+                    const statusLabel = "Resultado: ";
+                    const labelWidth = doc.getStringUnitWidth(statusLabel) * doc.getFontSize() / doc.internal.scaleFactor;
+                    
+                    doc.setTextColor(0).text(statusLabel, margin + 5, y);
+                    doc.setTextColor(statusColor).text(status, margin + 5 + labelWidth, y);
                     y += lineHeight;
 
-                    doc.setTextColor(0).setFont("helvetica", "normal");
+                    doc.setTextColor(0); // Resetear a color negro
                     const userResponseText = `Tu Respuesta: ${userAnswer.selected}`;
                     const userResponseLines = doc.splitTextToSize(userResponseText, maxWidth - 5);
                     doc.text(userResponseLines, margin + 5, y);
@@ -821,7 +828,8 @@
                         let correctDisplay = question.type === 'fill-in-the-blank' ? question.answer : question.choices.find(c => c.correct)?.text || 'N/A';
                         const correctDisplayText = `Respuesta Correcta: ${correctDisplay}`;
                         const correctDisplayLines = doc.splitTextToSize(correctDisplayText, maxWidth - 5);
-                        doc.setTextColor("#22c55e").text(correctDisplayLines, margin + 5, y);
+                        doc.setTextColor(0); // <-- La etiqueta "Respuesta Correcta" en negro
+                        doc.text(correctDisplayLines, margin + 5, y);
                         y += correctDisplayLines.length * lineHeight;
                     }
 
