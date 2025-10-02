@@ -784,9 +784,10 @@
             const score = userAnswers.filter(a => a.isCorrect).length;
             const topicNames = selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name).join(', ');
             let y = addSkemiaHeader(doc, `Revisión de Quiz: ${topicNames}`);
+            
             const margin = 10;
-            const lineHeight = 6;
-            const maxWidth = doc.internal.pageSize.getWidth() - (margin * 2);
+            const lineHeight = 7;
+            const maxWidth = 180; // Ancho máximo de línea más conservador, como en Flashcards.
 
             doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, margin, y);
             y += 10;
@@ -799,9 +800,9 @@
                         y = addSkemiaHeader(doc, `Revisión de Quiz (Cont.)`);
                     }
                     
+                    doc.setFontSize(10).setFont("helvetica", "bold");
                     const qText = `P. ${index + 1}: ${question.prompt}`;
                     const qLines = doc.splitTextToSize(qText, maxWidth);
-                    doc.setFontSize(10).setFont("helvetica", "bold");
                     doc.text(qLines, margin, y);
                     y += qLines.length * lineHeight;
 
@@ -810,9 +811,9 @@
                     doc.setTextColor(statusColor).text(`Resultado: ${status}`, margin + 5, y);
                     y += lineHeight;
 
+                    doc.setTextColor(0).setFont("helvetica", "normal");
                     const userResponseText = `Tu Respuesta: ${userAnswer.selected}`;
                     const userResponseLines = doc.splitTextToSize(userResponseText, maxWidth - 5);
-                    doc.setTextColor(0).setFont("helvetica", "normal");
                     doc.text(userResponseLines, margin + 5, y);
                     y += userResponseLines.length * lineHeight;
                     
