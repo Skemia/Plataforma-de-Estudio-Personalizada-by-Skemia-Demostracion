@@ -784,8 +784,13 @@
             const score = userAnswers.filter(a => a.isCorrect).length;
             const topicNames = selectedTemarioIndices.map(i => MOCK_DATA.temarios[i].name).join(', ');
             let y = addSkemiaHeader(doc, `Revisión de Quiz: ${topicNames}`);
-            doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, 10, y);
+            const margin = 10;
+            const lineHeight = 6;
+            const maxWidth = doc.internal.pageSize.getWidth() - (margin * 2);
+
+            doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, margin, y);
             y += 10;
+            
             data.forEach((question, index) => {
                 const userAnswer = userAnswers.find(ua => ua.questionId === question.id);
                 if (userAnswer) {
@@ -793,24 +798,35 @@
                         doc.addPage();
                         y = addSkemiaHeader(doc, `Revisión de Quiz (Cont.)`);
                     }
+                    
+                    const qText = `P. ${index + 1}: ${question.prompt}`;
+                    const qLines = doc.splitTextToSize(qText, maxWidth);
+                    doc.setFontSize(10).setFont("helvetica", "bold").text(qLines, margin, y);
+                    y += qLines.length * lineHeight;
+
                     const status = userAnswer.isCorrect ? "CORRECTO" : "INCORRECTO";
                     const statusColor = userAnswer.isCorrect ? "#22c55e" : "#ef4444";
-                    doc.setFontSize(10).setFont("helvetica", "bold").text(`P. ${index + 1}: ${question.prompt}`, 10, y);
-                    y += 6;
-                    doc.setTextColor(statusColor).text(`Resultado: ${status}`, 15, y);
-                    y += 6;
-                    doc.setTextColor(0).setFont("helvetica", "normal").text(`Tu Respuesta: ${userAnswer.selected}`, 15, y);
-                    y += 6;
+                    doc.setTextColor(statusColor).text(`Resultado: ${status}`, margin + 5, y);
+                    y += lineHeight;
+
+                    const userResponseText = `Tu Respuesta: ${userAnswer.selected}`;
+                    const userResponseLines = doc.splitTextToSize(userResponseText, maxWidth - 5);
+                    doc.setTextColor(0).setFont("helvetica", "normal").text(userResponseLines, margin + 5, y);
+                    y += userResponseLines.length * lineHeight;
+
                     if (!userAnswer.isCorrect) {
                         let correctDisplay = question.type === 'fill-in-the-blank' ? question.answer : question.choices.find(c => c.correct)?.text || 'N/A';
-                        doc.setTextColor("#22c55e").text(`Respuesta Correcta: ${correctDisplay}`, 15, y);
-                        y += 6;
+                        const correctDisplayText = `Respuesta Correcta: ${correctDisplay}`;
+                        const correctDisplayLines = doc.splitTextToSize(correctDisplayText, maxWidth - 5);
+                        doc.setTextColor("#22c55e").text(correctDisplayLines, margin + 5, y);
+                        y += correctDisplayLines.length * lineHeight;
                     }
+
                     if (question.explanation) {
                         doc.setTextColor(100).setFont("helvetica", "italic");
-                        const explanationLines = doc.splitTextToSize(`Explicación: ${question.explanation}`, 180);
-                        doc.text(explanationLines, 15, y);
-                        y += explanationLines.length * 6;
+                        const explanationLines = doc.splitTextToSize(`Explicación: ${question.explanation}`, maxWidth - 5);
+                        doc.text(explanationLines, margin + 5, y);
+                        y += explanationLines.length * lineHeight;
                     }
                     y += 4;
                 }
