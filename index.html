@@ -127,17 +127,32 @@
             <div class="flex flex-col items-center space-y-8">
                 <div class="w-full max-w-2xl text-center">
                     <h1 class="text-3xl font-bold mb-4">Flashcards</h1>
-                    <div id="flashcard-selection-area" class="w-full max-w-2xl mx-auto text-left">
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Selecciona uno o más temarios:</label>
-                        <div class="relative" id="multi-select-container">
-                            <button id="multi-select-button" class="w-full bg-white p-2 border border-neutral-border rounded-md flex justify-between items-center text-left">
-                                <span id="multi-select-text" class="text-text-secondary">Selecciona temarios...</span>
-                                <i data-lucide="chevron-down" class="w-5 h-5"></i>
-                            </button>
-                            <div id="multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
-                                </div>
+                    <div id="flashcard-selection-area" class="w-full max-w-2xl mx-auto text-left space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-1">1. Selecciona uno o más temarios:</label>
+                            <div class="relative" id="multi-select-container">
+                                <button id="multi-select-button" class="w-full bg-white p-2 border border-neutral-border rounded-md flex justify-between items-center text-left">
+                                    <span id="multi-select-text" class="text-text-secondary">Selecciona temarios...</span>
+                                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                                </button>
+                                <div id="multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
+                                    </div>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-4 mt-4">
+
+                        <div id="flashcard-session-options" class="hidden space-y-2 pt-2">
+                            <label class="block text-sm font-medium text-text-secondary">
+                                2. Elige cuántas tarjetas estudiar (de <span id="flashcard-total-count" class="font-bold">0</span> en total):
+                            </label>
+                            <input id="flashcard-session-size" type="number" placeholder="Todas" class="w-full p-2 border border-neutral-border rounded-md bg-white">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">Rápido:</span>
+                                <button data-size="25" class="size-btn-flashcards px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">25</button>
+                                <button data-size="50" class="size-btn-flashcards px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">50</button>
+                                <button data-size="100" class="size-btn-flashcards px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">100</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 pt-2">
                             <button id="start-flashcards-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
                                 Empezar Estudio
                             </button>
@@ -193,17 +208,32 @@
             <div class="flex flex-col items-center space-y-8">
                 <div class="w-full max-w-2xl text-center">
                     <h1 class="text-3xl font-bold mb-4">Quizzes</h1>
-                    <div id="quiz-selection-area" class="w-full max-w-2xl mx-auto text-left">
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Selecciona uno o más temarios:</label>
-                        <div class="relative" id="quiz-multi-select-container">
-                            <button id="quiz-multi-select-button" class="w-full bg-white p-2 border border-neutral-border rounded-md flex justify-between items-center text-left">
-                                <span id="quiz-multi-select-text" class="text-text-secondary">Selecciona temarios...</span>
-                                <i data-lucide="chevron-down" class="w-5 h-5"></i>
-                            </button>
-                            <div id="quiz-multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
-                                </div>
+                    <div id="quiz-selection-area" class="w-full max-w-2xl mx-auto text-left space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-1">1. Selecciona uno o más temarios:</label>
+                            <div class="relative" id="quiz-multi-select-container">
+                                <button id="quiz-multi-select-button" class="w-full bg-white p-2 border border-neutral-border rounded-md flex justify-between items-center text-left">
+                                    <span id="quiz-multi-select-text" class="text-text-secondary">Selecciona temarios...</span>
+                                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                                </button>
+                                <div id="quiz-multi-select-dropdown" class="absolute hidden w-full mt-1 bg-white border rounded-md shadow-lg z-20 max-h-60 overflow-y-auto multi-select-dropdown">
+                                    </div>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-4 mt-4">
+
+                        <div id="quiz-session-options" class="hidden space-y-2 pt-2">
+                            <label class="block text-sm font-medium text-text-secondary">
+                                2. Elige cuántas preguntas hacer (de <span id="quiz-total-count" class="font-bold">0</span> en total):
+                            </label>
+                            <input id="quiz-session-size" type="number" placeholder="Todas" class="w-full p-2 border border-neutral-border rounded-md bg-white">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">Rápido:</span>
+                                <button data-size="25" class="size-btn-quizzes px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">25</button>
+                                <button data-size="50" class="size-btn-quizzes px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">50</button>
+                                <button data-size="100" class="size-btn-quizzes px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">100</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 pt-2">
                             <button id="start-quiz-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
                                 Empezar Quiz
                             </button>
@@ -400,19 +430,31 @@
         }
 
         startFlashcardsBtn.addEventListener('click', () => {
+            let allItems = [];
+            AppState.flashcards.selectedTemarioIndices.forEach(index => allItems.push(...MOCK_DATA.temarios[index].flashcards));
+
+            if (fcShuffleBtn.classList.contains('active')) {
+                for (let i = allItems.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allItems[i], allItems[j]] = [allItems[j], allItems[i]];
+                }
+            }
+            
+            const sizeInput = document.getElementById('flashcard-session-size');
+            const sessionSize = parseInt(sizeInput.value, 10);
+            
+            let finalDeck = allItems;
+            if (!isNaN(sessionSize) && sessionSize > 0 && sessionSize < allItems.length) {
+                finalDeck = allItems.slice(0, sessionSize);
+            }
+
+            AppState.flashcards.combinedFlashcards = finalDeck;
+
             fcSelectionArea.classList.add('hidden');
             fcStudyArea.classList.remove('hidden');
             fcStudyArea.classList.add('flex');
             resetFlashcardState();
-            let combined = [];
-            AppState.flashcards.selectedTemarioIndices.forEach(index => combined.push(...MOCK_DATA.temarios[index].flashcards));
-            if (fcShuffleBtn.classList.contains('active')) {
-                for (let i = combined.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [combined[i], combined[j]] = [combined[j], combined[i]];
-                }
-            }
-            AppState.flashcards.combinedFlashcards = combined;
+            AppState.flashcards.combinedFlashcards = finalDeck; // Re-assign after reset
             renderFlashcard();
         });
 
@@ -450,7 +492,8 @@
         saveFlashcardProgressBtn.addEventListener('click', saveCurrentFlashcardProgress);
 
         function resetFlashcardState() {
-            AppState.flashcards = { ...AppState.flashcards, combinedFlashcards: [], currentIndex: 0, isFlipped: false, difficulty: {} };
+            const { selectedTemarioIndices } = AppState.flashcards;
+            AppState.flashcards = { ...AppState.flashcards, selectedTemarioIndices, combinedFlashcards: [], currentIndex: 0, isFlipped: false, difficulty: {} };
         }
 
         fcShuffleStudyBtn.addEventListener('click', () => {
@@ -473,13 +516,8 @@
             const logoText = "Skemia";
             const pageWidth = doc.internal.pageSize.getWidth();
             const logoWidth = doc.getStringUnitWidth(logoText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-            doc.setFontSize(20);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor("#5F476B");
-            doc.text(logoText, margin, y);
-            doc.setFontSize(titleFontSize);
-            doc.setTextColor(0);
-            doc.setFont("helvetica", "bold");
+            doc.setFontSize(20).setFont("helvetica", "bold").setTextColor("#5F476B").text(logoText, margin, y);
+            doc.setFontSize(titleFontSize).setTextColor(0).setFont("helvetica", "bold");
             const logoEnd = margin + logoWidth;
             const titleStartX = logoEnd + 5; 
             const availableWidthForTitle = pageWidth - titleStartX - margin;
@@ -492,10 +530,7 @@
                 doc.text(title, centerPoint, y, { align: 'center' });
                 y += lineHeight;
             }
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(150);
-            doc.text("Material propiedad de Skemia. Prohibida su difusión, reproducción o distribución.", margin, y);
+            doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(150).text("Material propiedad de Skemia. Prohibida su difusión, reproducción o distribución.", margin, y);
             y += lineHeight;
             doc.line(margin, y, pageWidth - margin, y);
             y += lineHeight + 5;
@@ -603,21 +638,31 @@
         quizShuffleSelectionBtn.addEventListener('click', () => quizShuffleSelectionBtn.classList.toggle('active'));
 
         startQuizBtn.addEventListener('click', () => {
+            let allItems = [];
+            AppState.quizzes.selectedTemarioIndices.forEach(index => {
+                if (MOCK_DATA.temarios[index].quizzes) allItems.push(...MOCK_DATA.temarios[index].quizzes);
+            });
+
+            if (quizShuffleSelectionBtn.classList.contains('active')) {
+                for (let i = allItems.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allItems[i], allItems[j]] = [allItems[j], allItems[i]];
+                }
+            }
+            
+            const sizeInput = document.getElementById('quiz-session-size');
+            const sessionSize = parseInt(sizeInput.value, 10);
+            
+            let finalQuiz = allItems;
+            if (!isNaN(sessionSize) && sessionSize > 0 && sessionSize < allItems.length) {
+                finalQuiz = allItems.slice(0, sessionSize);
+            }
+            
             quizSelectionArea.classList.add('hidden');
             quizStudyArea.classList.remove('hidden');
             quizStudyArea.classList.add('flex');
             resetQuizState();
-            let combined = [];
-            AppState.quizzes.selectedTemarioIndices.forEach(index => {
-                if (MOCK_DATA.temarios[index].quizzes) combined.push(...MOCK_DATA.temarios[index].quizzes);
-            });
-            if (quizShuffleSelectionBtn.classList.contains('active')) {
-                for (let i = combined.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [combined[i], combined[j]] = [combined[j], combined[i]];
-                }
-            }
-            AppState.quizzes.combinedQuizzes = combined;
+            AppState.quizzes.combinedQuizzes = finalQuiz;
             renderQuiz();
         });
         
@@ -876,9 +921,26 @@
         
         function setupMultiSelect(type) {
             const state = AppState[type];
+            const optionsContainer = document.getElementById(`${type}-session-options`);
+            const totalCountEl = document.getElementById(`${type}-total-count`);
+
             const dropdown = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-dropdown`);
             dropdown.innerHTML = MOCK_DATA.temarios.map((temario, index) => `<label class="flex items-center p-2 hover:bg-gray-100 cursor-pointer"><input type="checkbox" data-index="${index}" class="mr-2" ${state.selectedTemarioIndices.includes(index) ? 'checked' : ''}><span>${temario.name}</span></label>`).join('');
+            
             updateMultiSelectButtonText(type);
+
+            let totalCount = 0;
+            state.selectedTemarioIndices.forEach(index => {
+                const items = (type === 'flashcards') ? MOCK_DATA.temarios[index].flashcards : MOCK_DATA.temarios[index].quizzes;
+                if (items) totalCount += items.length;
+            });
+            
+            totalCountEl.textContent = totalCount;
+            if (totalCount > 0) {
+                optionsContainer.classList.remove('hidden');
+            } else {
+                optionsContainer.classList.add('hidden');
+            }
         }
 
         function updateMultiSelectButtonText(type) {
@@ -887,9 +949,25 @@
             const startBtn = document.getElementById(`start-${type === 'flashcards' ? 'flashcards' : 'quiz'}-btn`);
             const count = state.selectedTemarioIndices.length;
             startBtn.disabled = count === 0;
+
             if (count === 0) buttonText.textContent = 'Selecciona temarios...';
             else if (count === 1) buttonText.textContent = MOCK_DATA.temarios[state.selectedTemarioIndices[0]].name;
             else buttonText.textContent = `${count} temarios seleccionados`;
+
+            // Actualizar la UI de tamaño de sesión
+            const optionsContainer = document.getElementById(`${type}-session-options`);
+            const totalCountEl = document.getElementById(`${type}-total-count`);
+            let totalCount = 0;
+            state.selectedTemarioIndices.forEach(index => {
+                const items = (type === 'flashcards') ? MOCK_DATA.temarios[index].flashcards : MOCK_DATA.temarios[index].quizzes;
+                if (items) totalCount += items.length;
+            });
+            totalCountEl.textContent = totalCount;
+            if (totalCount > 0) {
+                optionsContainer.classList.remove('hidden');
+            } else {
+                optionsContainer.classList.add('hidden');
+            }
         }
         
         ['flashcards', 'quizzes'].forEach(type => {
@@ -906,6 +984,11 @@
                     else state.selectedTemarioIndices = state.selectedTemarioIndices.filter(i => i !== index);
                     updateMultiSelectButtonText(type);
                 }
+            });
+            document.querySelectorAll(`.size-btn-${type}`).forEach(button => {
+                button.addEventListener('click', () => {
+                    document.getElementById(`${type}-session-size`).value = button.dataset.size;
+                });
             });
         });
 
@@ -984,7 +1067,7 @@
                     } else if (record.type === 'quizzes') {
                         const { answeredCount: answered, correct, incorrect, totalQuestions } = record;
                         const correctPercent = answered > 0 ? ((correct / answered) * 100).toFixed(1) : 0;
-                        const incorrectPercent = answered > 0 ? ((incorrect / answered) * 100).toFixed(1) : 0;
+                        const incorrectPercent = answered > 0 ? ((incorrect / answered) * 100).toFixed(1) : 0; // CORRECCIÓN
                         modalTitle.textContent = 'Detalles de Quiz';
                         detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Preguntas respondidas:</strong> ${answered} de ${totalQuestions}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${correct} (${correctPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${incorrect} (${incorrectPercent}%)</li></ul>`;
                     }
