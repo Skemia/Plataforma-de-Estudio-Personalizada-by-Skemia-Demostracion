@@ -152,6 +152,7 @@
                                 <button data-size="100" class="size-btn-flashcards px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">100</button>
                             </div>
                         </div>
+
                         <div class="flex items-center space-x-4 pt-2">
                             <button id="start-flashcards-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
                                 Empezar Estudio
@@ -233,6 +234,7 @@
                                 <button data-size="100" class="size-btn-quizzes px-3 py-1 text-sm bg-gray-200 rounded-md hover:bg-gray-300">100</button>
                             </div>
                         </div>
+
                         <div class="flex items-center space-x-4 pt-2">
                             <button id="start-quiz-btn" class="flex-grow px-6 py-2 bg-brand-accent text-white rounded-md hover:bg-opacity-90 disabled:bg-gray-300">
                                 Empezar Quiz
@@ -431,7 +433,7 @@
 
         startFlashcardsBtn.addEventListener('click', () => {
             let allItems = [];
-            AppState.flashcards.selectedTemarioIndices.forEach(index => allItems.push(...MOCK_DATA.temarios[index].flashcards));
+            AppState.flashcards.selectedTemarioIndices.forEach(index => allItems.push(...(MOCK_DATA.temarios[index].flashcards || [])));
 
             if (fcShuffleBtn.classList.contains('active')) {
                 for (let i = allItems.length - 1; i > 0; i--) {
@@ -448,13 +450,12 @@
                 finalDeck = allItems.slice(0, sessionSize);
             }
 
-            AppState.flashcards.combinedFlashcards = finalDeck;
-
             fcSelectionArea.classList.add('hidden');
             fcStudyArea.classList.remove('hidden');
             fcStudyArea.classList.add('flex');
+            
             resetFlashcardState();
-            AppState.flashcards.combinedFlashcards = finalDeck; // Re-assign after reset
+            AppState.flashcards.combinedFlashcards = finalDeck;
             renderFlashcard();
         });
 
@@ -921,26 +922,9 @@
         
         function setupMultiSelect(type) {
             const state = AppState[type];
-            const optionsContainer = document.getElementById(`${type}-session-options`);
-            const totalCountEl = document.getElementById(`${type}-total-count`);
-
             const dropdown = document.getElementById(`${type === 'flashcards' ? '' : 'quiz-'}multi-select-dropdown`);
             dropdown.innerHTML = MOCK_DATA.temarios.map((temario, index) => `<label class="flex items-center p-2 hover:bg-gray-100 cursor-pointer"><input type="checkbox" data-index="${index}" class="mr-2" ${state.selectedTemarioIndices.includes(index) ? 'checked' : ''}><span>${temario.name}</span></label>`).join('');
-            
             updateMultiSelectButtonText(type);
-
-            let totalCount = 0;
-            state.selectedTemarioIndices.forEach(index => {
-                const items = (type === 'flashcards') ? MOCK_DATA.temarios[index].flashcards : MOCK_DATA.temarios[index].quizzes;
-                if (items) totalCount += items.length;
-            });
-            
-            totalCountEl.textContent = totalCount;
-            if (totalCount > 0) {
-                optionsContainer.classList.remove('hidden');
-            } else {
-                optionsContainer.classList.add('hidden');
-            }
         }
 
         function updateMultiSelectButtonText(type) {
@@ -950,19 +934,23 @@
             const count = state.selectedTemarioIndices.length;
             startBtn.disabled = count === 0;
 
-            if (count === 0) buttonText.textContent = 'Selecciona temarios...';
-            else if (count === 1) buttonText.textContent = MOCK_DATA.temarios[state.selectedTemarioIndices[0]].name;
-            else buttonText.textContent = `${count} temarios seleccionados`;
+            if (count === 0) {
+                buttonText.textContent = 'Selecciona temarios...';
+            } else if (count === 1) {
+                buttonText.textContent = MOCK_DATA.temarios[state.selectedTemarioIndices[0]].name;
+            } else {
+                buttonText.textContent = `${count} temarios seleccionados`;
+            }
 
-            // Actualizar la UI de tamaño de sesión
             const optionsContainer = document.getElementById(`${type}-session-options`);
             const totalCountEl = document.getElementById(`${type}-total-count`);
             let totalCount = 0;
             state.selectedTemarioIndices.forEach(index => {
-                const items = (type === 'flashcards') ? MOCK_DATA.temarios[index].flashcards : MOCK_DATA.temarios[index].quizzes;
-                if (items) totalCount += items.length;
+                const items = (type === 'flashcards') ? (MOCK_DATA.temarios[index].flashcards || []) : (MOCK_DATA.temarios[index].quizzes || []);
+                totalCount += items.length;
             });
             totalCountEl.textContent = totalCount;
+            
             if (totalCount > 0) {
                 optionsContainer.classList.remove('hidden');
             } else {
@@ -980,8 +968,11 @@
                 if (e.target.type === 'checkbox') {
                     const index = parseInt(e.target.dataset.index, 10);
                     const state = AppState[type];
-                    if (e.target.checked) state.selectedTemarioIndices.push(index);
-                    else state.selectedTemarioIndices = state.selectedTemarioIndices.filter(i => i !== index);
+                    if (e.target.checked) {
+                        if (!state.selectedTemarioIndices.includes(index)) state.selectedTemarioIndices.push(index);
+                    } else {
+                        state.selectedTemarioIndices = state.selectedTemarioIndices.filter(i => i !== index);
+                    }
                     updateMultiSelectButtonText(type);
                 }
             });
@@ -1067,7 +1058,7 @@
                     } else if (record.type === 'quizzes') {
                         const { answeredCount: answered, correct, incorrect, totalQuestions } = record;
                         const correctPercent = answered > 0 ? ((correct / answered) * 100).toFixed(1) : 0;
-                        const incorrectPercent = answered > 0 ? ((incorrect / answered) * 100).toFixed(1) : 0; // CORRECCIÓN
+                        const incorrectPercent = answered > 0 ? ((incorrect / answered) * 100).toFixed(1) : 0;
                         modalTitle.textContent = 'Detalles de Quiz';
                         detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Preguntas respondidas:</strong> ${answered} de ${totalQuestions}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${correct} (${correctPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${incorrect} (${incorrectPercent}%)</li></ul>`;
                     }
