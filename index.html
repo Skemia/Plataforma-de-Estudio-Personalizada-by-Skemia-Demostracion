@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skemia - Herramienta Educativa Integrada</title>
-    <meta name="robots" content="noindex">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -787,8 +786,8 @@
             let y = addSkemiaHeader(doc, `Revisión de Quiz: ${topicNames}`);
             
             const margin = 10;
-            const lineHeight = 7; // Usamos el mismo que en Flashcards PDF
-            const maxWidth = 180; // Ancho máximo de línea conservador
+            const lineHeight = 7;
+            const maxWidth = 180;
 
             doc.setFontSize(12).setFont("helvetica", "bold").text(`Resumen: ${score} de ${userAnswers.length} correctas`, margin, y);
             y += 10;
@@ -801,7 +800,7 @@
                         y = addSkemiaHeader(doc, `Revisión de Quiz (Cont.)`);
                     }
                     
-                    doc.setTextColor(0); // Resetear a color negro por defecto
+                    doc.setTextColor(0); 
                     doc.setFontSize(10).setFont("helvetica", "bold");
                     const qText = `P. ${index + 1}: ${question.prompt}`;
                     const qLines = doc.splitTextToSize(qText, maxWidth);
@@ -819,7 +818,7 @@
                     doc.setTextColor(statusColor).text(status, margin + 5 + labelWidth, y);
                     y += lineHeight;
 
-                    doc.setTextColor(0); // Resetear a color negro
+                    doc.setTextColor(0);
                     const userResponseText = `Tu Respuesta: ${userAnswer.selected}`;
                     const userResponseLines = doc.splitTextToSize(userResponseText, maxWidth - 5);
                     doc.text(userResponseLines, margin + 5, y);
@@ -829,7 +828,7 @@
                         let correctDisplay = question.type === 'fill-in-the-blank' ? question.answer : question.choices.find(c => c.correct)?.text || 'N/A';
                         const correctDisplayText = `Respuesta Correcta: ${correctDisplay}`;
                         const correctDisplayLines = doc.splitTextToSize(correctDisplayText, maxWidth - 5);
-                        doc.setTextColor(0); // <-- La etiqueta "Respuesta Correcta" en negro
+                        doc.setTextColor(0);
                         doc.text(correctDisplayLines, margin + 5, y);
                         y += correctDisplayLines.length * lineHeight;
                     }
@@ -985,8 +984,9 @@
                     } else if (record.type === 'quizzes') {
                         const { answeredCount: answered, correct, incorrect, totalQuestions } = record;
                         const correctPercent = answered > 0 ? ((correct / answered) * 100).toFixed(1) : 0;
+                        const incorrectPercent = answered > 0 ? ((incorrect / answered) * 100).toFixed(1) : 0;
                         modalTitle.textContent = 'Detalles de Quiz';
-                        detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Preguntas respondidas:</strong> ${answered} de ${totalQuestions}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${correct} (${correctPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${incorrect}</li></ul>`;
+                        detailsHtml = `<ul class="space-y-2 text-sm"><li><strong>Preguntas respondidas:</strong> ${answered} de ${totalQuestions}</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div><strong>Correctas:</strong> ${correct} (${correctPercent}%)</li><li class="flex items-center"><div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div><strong>Incorrectas:</strong> ${incorrect} (${incorrectPercent}%)</li></ul>`;
                     }
                     modalContent.innerHTML = detailsHtml;
                     modal.classList.remove('hidden');
